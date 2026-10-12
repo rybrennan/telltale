@@ -45,80 +45,138 @@ RESULTS = REPO / "results"
 BURN_IN = 10
 WINDOW, SPAN = 5, 5
 REFERENCE = slice(5, 15)
-"""CUSUM reference epoch: rounds 5-14, the settled part of the burn-in. The
-same for every node and every run. Faults in this study start at round 15."""
+"""CUSUM reference epoch: rounds 5-14, the settled part of the burn-in.
+
+The same for every node and every run. Faults in this study start at round 15.
+"""
 
 
 def platform_classes(d: dict) -> np.ndarray:
-    """'sub' for nodes on a contact schedule, 'ship' otherwise. Thresholds are
-    calibrated per class and CUSUM's reference SD is pooled within a class."""
+    """Label each node 'sub' if it is on a contact schedule, else 'ship'.
+
+    Thresholds are calibrated per class and CUSUM's reference SD is pooled
+    within a class.
+    """
     K = d["config"]["n_clients"]
     subs = set((d.get("contact") or {}).get("sub_nodes", []))
     return np.array(["sub" if k in subs else "ship" for k in range(K)])
 
 
 def statistics(probs: np.ndarray, classes: np.ndarray) -> dict[str, np.ndarray]:
+    """Compute every scored statistic as a [round, node] array.
+
+    Args:
+        probs: Probe scores, shape [round, node, probe, class].
+        classes: Platform class per node, from platform_classes.
+
+    Returns:
+        Map from statistic name (the names in STATS) to its series.
+    """
     lv = level_series(probs)
     return {
         "level": lv["level"],
         "level_z": np.abs(lv["z"]),
         "self": self_divergence(probs),
-        "persistence": persistence_series(offset_change(lv["offset"], WINDOW), SPAN),
+        "persistence": persistence_series(
+            offset_change(lv["offset"], WINDOW), SPAN
+        ),
         "level_own_z": self_referenced_level(lv["level"], WINDOW),
         "level_cusum": cusum(lv["level"], REFERENCE, pool=classes),
-        "level_cusum2": cusum(lv["level"], REFERENCE, pool=classes, two_sided=True),
+        "level_cusum2": cusum(
+            lv["level"], REFERENCE, pool=classes, two_sided=True
+        ),
     }
 
 
 def load(stem: str) -> tuple[dict, np.ndarray]:
-    return json.loads((RESULTS / f"{stem}.json").read_text()), np.load(RESULTS / f"{stem}.npz")["probs"]
+    """Read a result's JSON and its probe-score array from results/."""
+    return json.loads((RESULTS / f"{stem}.json").read_text()), np.load(
+        RESULTS / f"{stem}.npz"
+    )["probs"]
 
 
 def family(d: dict) -> tuple:
-    """Everything that identifies a federation except its train seed and tag.
+    """Key a run by everything that identifies it but its train seed and tag.
+
     Healthy runs in one family differ only by train_seed; the lowest seed is
-    the calibration run and the others are held out for the false-alarm rate."""
-    cfg = {k: v for k, v in d["config"].items() if k not in ("train_seed", "tag", "notes", "extra")}
-    return (json.dumps(cfg, sort_keys=True), d["probe_fingerprint"], json.dumps(d.get("contact"), sort_keys=True))
-
-
-def observed_mask(d: dict) -> np.ndarray | None:
-    c = d.get("contact")
-    if not c:
-        return None
-    return ContactSchedule(period=c["period"], sub_nodes=tuple(c["sub_nodes"])).observed(
-        d["config"]["rounds"], d["config"]["n_clients"]
+    the calibration run and the others are held out for the false-alarm rate.
+    """
+    cfg = {
+        k: v
+        for k, v in d["config"].items()
+        if k not in ("train_seed", "tag", "notes", "extra")
+    }
+    return (
+        json.dumps(cfg, sort_keys=True),
+        d["probe_fingerprint"],
+        json.dumps(d.get("contact"), sort_keys=True),
     )
 
 
-STATS = ("level", "level_z", "self", "persistence", "level_own_z", "level_cusum", "level_cusum2")
+def observed_mask(d: dict) -> np.ndarray | None:
+    """Return the [round, node] observed mask, or None with no schedule."""
+    c = d.get("contact")
+    if not c:
+        return None
+    return ContactSchedule(
+        period=c["period"], sub_nodes=tuple(c["sub_nodes"])
+    ).observed(d["config"]["rounds"], d["config"]["n_clients"])
+
+
+STATS = (
+    "level",
+    "level_z",
+    "self",
+    "persistence",
+    "level_own_z",
+    "level_cusum",
+    "level_cusum2",
+)
 QUANTILES = (None, 0.99, 0.95, 0.9)
 """Threshold sweep: healthy max, then quantiles of the healthy node-rounds."""
 
 
 def main() -> int:
+    """Print the false-alarm, detection and sweep tables; write scores.json."""
     families: dict[tuple, dict[int, tuple[dict, dict]]] = {}
     for f in sorted(RESULTS.glob("probes_*.json")):
         d, probs = load(f.stem)
-        families.setdefault(family(d), {})[d["config"]["train_seed"]] = (d, statistics(probs, platform_classes(d)))
+        families.setdefault(family(d), {})[d["config"]["train_seed"]] = (
+            d,
+            statistics(probs, platform_classes(d)),
+        )
     faults = []
     for f in sorted(RESULTS.glob("fault_*.json")):
         d, probs = load(f.stem)
         faults.append((d, statistics(probs, platform_classes(d))))
 
     # ── false-alarm rate on held-out healthy seeds ──
-    print(f"## False alarms: calibrate on the lowest train seed, count on the others (burn-in {BURN_IN})\n")
-    print("| dataset | alpha | calib seed | held-out seeds | stat | thr | node-round FAR | rounds with any alarm |")
+    print(
+        "## False alarms: calibrate on the lowest train seed, count on the "
+        f"others (burn-in {BURN_IN})\n"
+    )
+    print(
+        "| dataset | alpha | calib seed | held-out seeds | stat | thr | "
+        "node-round FAR | rounds with any alarm |"
+    )
     print("|---|---|---|---|---|---|---|---|")
     far: dict[tuple, float] = {}
     summary: dict = {"far": [], "pd": [], "sweep": []}
-    for fam, runs in sorted(families.items(), key=lambda kv: next(iter(kv[1].values()))[0]["config"]["dirichlet_alpha"]):
+    for fam, runs in sorted(
+        families.items(),
+        key=lambda kv: next(iter(kv[1].values()))[0]["config"][
+            "dirichlet_alpha"
+        ],
+    ):
         seeds = sorted(runs)
         calib_d, calib_stats = runs[seeds[0]]
         held = [runs[s] for s in seeds[1:]]
         alpha = calib_d["config"]["dirichlet_alpha"]
         if not held:
-            print(f"| {calib_d['config']['dataset']} | {alpha} | {seeds[0]} | none yet | - | - | - | - |")
+            print(
+                f"| {calib_d['config']['dataset']} | {alpha} | {seeds[0]} | "
+                "none yet | - | - | - | - |"
+            )
             continue
         classes = platform_classes(calib_d)
         for name in STATS:
@@ -130,12 +188,24 @@ def main() -> int:
                 node_rounds.append(fl.mean())
                 any_alarm.append(fl.any(axis=1).mean())
             far[(fam, name)] = float(np.mean(node_rounds))
-            summary["far"].append({"dataset": calib_d["config"]["dataset"], "alpha": alpha, "contact": bool(calib_d.get("contact")), "stat": name,
-                                   "thresholds": {c: t.value for c, t in thr.items()},
-                                   "node_round_far": float(np.mean(node_rounds)), "any_alarm": float(np.mean(any_alarm))})
-            thr_txt = " / ".join(f"{c}:{t.value:.3f} (n={t.n_calibration})" for c, t in thr.items())
+            summary["far"].append(
+                {
+                    "dataset": calib_d["config"]["dataset"],
+                    "alpha": alpha,
+                    "contact": bool(calib_d.get("contact")),
+                    "stat": name,
+                    "thresholds": {c: t.value for c, t in thr.items()},
+                    "node_round_far": float(np.mean(node_rounds)),
+                    "any_alarm": float(np.mean(any_alarm)),
+                }
+            )
+            thr_txt = " / ".join(
+                f"{c}:{t.value:.3f} (n={t.n_calibration})"
+                for c, t in thr.items()
+            )
             print(
-                f"| {calib_d['config']['dataset']} | {alpha} | {seeds[0]} | {seeds[1:]} | {name} | {thr_txt} | "
+                f"| {calib_d['config']['dataset']} | {alpha} | {seeds[0]} | "
+                f"{seeds[1:]} | {name} | {thr_txt} | "
                 f"{np.mean(node_rounds):.3f} | {np.mean(any_alarm):.3f} |"
             )
 
@@ -148,17 +218,31 @@ def main() -> int:
     healthy = {fam: runs[min(runs)] for fam, runs in families.items()}
     print()
 
-    print(f"## Fault runs (CUSUM reference rounds {REFERENCE.start}-{REFERENCE.stop - 1}; thresholds = calibration seed's healthy max after burn-in, per platform class; CUSUM reference SD pooled within class)\n")
-    print("| alpha | contact | fault | node | onset | ramp | sev | fleet acc healthy→faulted (tail) | stat | thr | detected | round | ttd | contacts | false loc |")
+    print(
+        "## Fault runs (CUSUM reference rounds "
+        f"{REFERENCE.start}-{REFERENCE.stop - 1}; thresholds = calibration "
+        "seed's healthy max after burn-in, per platform class; CUSUM "
+        "reference SD pooled within class)\n"
+    )
+    print(
+        "| alpha | contact | fault | node | onset | ramp | sev | fleet acc "
+        "healthy→faulted (tail) | stat | thr | detected | round | ttd | "
+        "contacts | false loc |"
+    )
     print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     outcomes: dict[tuple, list] = {}
     for d, stats in faults:
         key = family(d)
         obs = observed_mask(d)
         c = d.get("contact")
-        contact = f"subs {c['sub_nodes']} every {c['period']}" if c else "every round"
+        contact = (
+            f"subs {c['sub_nodes']} every {c['period']}" if c else "every round"
+        )
         if key not in healthy:
-            print(f"| {d['config']['dirichlet_alpha']} | {d['fault']['kind']} | no healthy run for these seeds |")
+            print(
+                f"| {d['config']['dirichlet_alpha']} | {d['fault']['kind']} | "
+                "no healthy run for these seeds |"
+            )
             continue
         _, hstats = healthy[key]
         spec = d["fault"]
@@ -172,25 +256,71 @@ def main() -> int:
         for name in STATS:
             thr = calibrate_by_class(hstats[name], classes, name, BURN_IN)
             fl = flags_by_class(stats[name], thr, classes)
-            out = score_flags(fl, BURN_IN, spec["node"], spec["onset"], observed=obs)
+            out = score_flags(
+                fl, BURN_IN, spec["node"], spec["onset"], observed=obs
+            )
             outcomes.setdefault(
-                (d["config"]["dataset"], d["config"]["dirichlet_alpha"], contact, spec["kind"], spec["ramp"],
-                 spec["severity"], spec["node"], name), []
-            ).append((out, far.get((key, name)), d["config"]["rounds"] - max(spec["onset"], BURN_IN)))
-            thr_txt = " / ".join(f"{c}:{t.value:.3f} (n={t.n_calibration})" for c, t in thr.items())
+                (
+                    d["config"]["dataset"],
+                    d["config"]["dirichlet_alpha"],
+                    contact,
+                    spec["kind"],
+                    spec["ramp"],
+                    spec["severity"],
+                    spec["node"],
+                    name,
+                ),
+                [],
+            ).append(
+                (
+                    out,
+                    far.get((key, name)),
+                    d["config"]["rounds"] - max(spec["onset"], BURN_IN),
+                )
+            )
+            thr_txt = " / ".join(
+                f"{c}:{t.value:.3f} (n={t.n_calibration})"
+                for c, t in thr.items()
+            )
             print(
-                f"| {d['config']['dirichlet_alpha']} | {contact} | {spec['kind']} | {spec['node']} | {spec['onset']} | "
-                f"{spec['ramp']} | {spec['severity']} | {acc} | {name} | {thr_txt} | "
-                f"{'YES' if out.detected else 'no'} | {out.detection_round if out.detected else '-'} | "
+                f"| {d['config']['dirichlet_alpha']} | {contact} | "
+                f"{spec['kind']} | {spec['node']} | {spec['onset']} | "
+                f"{spec['ramp']} | {spec['severity']} | {acc} | {name} | "
+                f"{thr_txt} | "
+                f"{'YES' if out.detected else 'no'} | "
+                f"{out.detection_round if out.detected else '-'} | "
                 f"{out.time_to_detection if out.detected else '-'} | "
-                f"{out.contacts_to_detection if out.detected else '-'} | {out.false_localisations} |"
+                f"{out.contacts_to_detection if out.detected else '-'} | "
+                f"{out.false_localisations} |"
             )
     # ── detection probability over seeds ──
-    print("\n## Detection probability over train seeds (thresholds from seed 0; Wilson 95% interval)\n")
-    print("Pd by chance = probability the held-out node-round FAR alone flags the target somewhere in the post-onset window.\n")
-    print("| dataset | alpha | contact | fault | ramp | sev | node | stat | seeds | Pd | 95% CI | Pd by chance | ttd (median over hits) | false loc per run |")
+    print(
+        "\n## Detection probability over train seeds (thresholds from seed 0; "
+        "Wilson 95% interval)\n"
+    )
+    print(
+        "Pd by chance = probability the held-out node-round FAR alone flags "
+        "the target somewhere in the post-onset window.\n"
+    )
+    print(
+        "| dataset | alpha | contact | fault | ramp | sev | node | stat | "
+        "seeds | Pd | 95% CI | Pd by chance | ttd (median over hits) | false "
+        "loc per run |"
+    )
     print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
-    for key in sorted(outcomes, key=lambda k: (k[0], k[1], k[2], k[3], k[4], k[5], k[6], STATS.index(k[7]))):
+    for key in sorted(
+        outcomes,
+        key=lambda k: (
+            k[0],
+            k[1],
+            k[2],
+            k[3],
+            k[4],
+            k[5],
+            k[6],
+            STATS.index(k[7]),
+        ),
+    ):
         rows = outcomes[key]
         outs = [r[0] for r in rows]
         n = len(outs)
@@ -202,17 +332,40 @@ def main() -> int:
         f0, window = rows[0][1], rows[0][2]
         chance = "n/a" if f0 is None else f"{1 - (1 - f0) ** window:.2f}"
         dataset, alpha, contact, kind, ramp, sev, node, name = key
-        summary["pd"].append({"dataset": dataset, "alpha": alpha, "contact": contact, "kind": kind, "ramp": ramp, "severity": sev,
-                              "node": node, "stat": name, "seeds": n, "pd": pd, "lo": lo, "hi": hi,
-                              "chance": None if f0 is None else 1 - (1 - f0) ** window,
-                              "ttd_median": None if ttd is None else float(ttd), "false_loc": float(fl)})
+        summary["pd"].append(
+            {
+                "dataset": dataset,
+                "alpha": alpha,
+                "contact": contact,
+                "kind": kind,
+                "ramp": ramp,
+                "severity": sev,
+                "node": node,
+                "stat": name,
+                "seeds": n,
+                "pd": pd,
+                "lo": lo,
+                "hi": hi,
+                "chance": None if f0 is None else 1 - (1 - f0) ** window,
+                "ttd_median": None if ttd is None else float(ttd),
+                "false_loc": float(fl),
+            }
+        )
         print(
-            f"| {dataset} | {alpha} | {contact} | {kind} | {ramp} | {sev} | {node} | {name} | {n} | {pd:.2f} | "
-            f"[{lo:.2f}, {hi:.2f}] | {chance} | {'-' if ttd is None else f'{ttd:.0f}'} | {fl:.1f} |"
+            f"| {dataset} | {alpha} | {contact} | {kind} | {ramp} | {sev} | "
+            f"{node} | {name} | {n} | {pd:.2f} | "
+            f"[{lo:.2f}, {hi:.2f}] | {chance} | "
+            f"{'-' if ttd is None else f'{ttd:.0f}'} | {fl:.1f} |"
         )
     # ── threshold sweep: FAR vs Pd per alpha per statistic ──
-    print("\n## Threshold sweep (every-round families; Pd over the top severity of each fault kind, all seeds)\n")
-    print("| dataset | alpha | stat | threshold | held-out node-round FAR | any-node alarm rate | Pd (n runs) | ttd median | false loc per run |")
+    print(
+        "\n## Threshold sweep (every-round families; Pd over the top severity "
+        "of each fault kind, all seeds)\n"
+    )
+    print(
+        "| dataset | alpha | stat | threshold | held-out node-round FAR | "
+        "any-node alarm rate | Pd (n runs) | ttd median | false loc per run |"
+    )
     print("|---|---|---|---|---|---|---|---|---|")
     # top severity per (alpha, kind) among severities that ran on every seed,
     # so each kind contributes the same number of runs
@@ -220,42 +373,96 @@ def main() -> int:
     for d, _ in faults:
         if d.get("contact") or d["fault"]["ramp"] != 10:
             continue
-        k = (d["config"]["dataset"], d["config"]["dirichlet_alpha"], d["fault"]["kind"], d["fault"]["severity"])
+        k = (
+            d["config"]["dataset"],
+            d["config"]["dirichlet_alpha"],
+            d["fault"]["kind"],
+            d["fault"]["severity"],
+        )
         counts[k] = counts.get(k, 0) + 1
     full = max(counts.values()) if counts else 0
     top = {}
     for (ds_, alpha_, kind_, sev_), n_ in counts.items():
         if n_ == full:
-            top[(ds_, alpha_, kind_)] = max(top.get((ds_, alpha_, kind_), 0.0), sev_)
-    for fam, runs in sorted(families.items(), key=lambda kv: next(iter(kv[1].values()))[0]["config"]["dirichlet_alpha"]):
+            top[(ds_, alpha_, kind_)] = max(
+                top.get((ds_, alpha_, kind_), 0.0), sev_
+            )
+    for fam, runs in sorted(
+        families.items(),
+        key=lambda kv: next(iter(kv[1].values()))[0]["config"][
+            "dirichlet_alpha"
+        ],
+    ):
         seeds = sorted(runs)
         calib_d, calib_stats = runs[seeds[0]]
         if calib_d.get("contact") or len(seeds) < 2:
             continue
         alpha = calib_d["config"]["dirichlet_alpha"]
         classes = platform_classes(calib_d)
-        fam_faults = [(d, st) for d, st in faults
-                      if family(d) == fam and d["fault"]["ramp"] == 10
-                      and d["fault"]["severity"] == top.get((calib_d["config"]["dataset"], alpha, d["fault"]["kind"]))]
+        fam_faults = [
+            (d, st)
+            for d, st in faults
+            if family(d) == fam
+            and d["fault"]["ramp"] == 10
+            and d["fault"]["severity"]
+            == top.get(
+                (calib_d["config"]["dataset"], alpha, d["fault"]["kind"])
+            )
+        ]
         for name in STATS:
             for q in QUANTILES:
-                thr = calibrate_by_class(calib_stats[name], classes, name, BURN_IN, q)
+                thr = calibrate_by_class(
+                    calib_stats[name], classes, name, BURN_IN, q
+                )
                 fars, anys = [], []
                 for sd in seeds[1:]:
-                    fl = flags_by_class(runs[sd][1][name], thr, classes)[BURN_IN:]
-                    fars.append(fl.mean()); anys.append(fl.any(axis=1).mean())
-                outs = [score_flags(flags_by_class(st[name], thr, classes), BURN_IN, d["fault"]["node"], d["fault"]["onset"])
-                        for d, st in fam_faults]
+                    fl = flags_by_class(runs[sd][1][name], thr, classes)[
+                        BURN_IN:
+                    ]
+                    fars.append(fl.mean())
+                    anys.append(fl.any(axis=1).mean())
+                outs = [
+                    score_flags(
+                        flags_by_class(st[name], thr, classes),
+                        BURN_IN,
+                        d["fault"]["node"],
+                        d["fault"]["onset"],
+                    )
+                    for d, st in fam_faults
+                ]
                 hits = [o for o in outs if o.detected]
                 pd = len(hits) / len(outs) if outs else float("nan")
-                ttd = float(np.median([o.time_to_detection for o in hits])) if hits else None
-                fl_mean = float(np.mean([o.false_localisations for o in outs])) if outs else float("nan")
+                ttd = (
+                    float(np.median([o.time_to_detection for o in hits]))
+                    if hits
+                    else None
+                )
+                fl_mean = (
+                    float(np.mean([o.false_localisations for o in outs]))
+                    if outs
+                    else float("nan")
+                )
                 label = "max" if q is None else f"q{q}"
-                summary["sweep"].append({"dataset": calib_d["config"]["dataset"], "alpha": alpha, "stat": name, "threshold": label,
-                                         "node_round_far": float(np.mean(fars)), "any_alarm": float(np.mean(anys)),
-                                         "pd": pd, "n": len(outs), "ttd_median": ttd, "false_loc": fl_mean})
-                print(f"| {calib_d['config']['dataset']} | {alpha} | {name} | {label} | {np.mean(fars):.3f} | {np.mean(anys):.3f} | "
-                      f"{pd:.2f} ({len(outs)}) | {'-' if ttd is None else f'{ttd:.0f}'} | {fl_mean:.1f} |")
+                summary["sweep"].append(
+                    {
+                        "dataset": calib_d["config"]["dataset"],
+                        "alpha": alpha,
+                        "stat": name,
+                        "threshold": label,
+                        "node_round_far": float(np.mean(fars)),
+                        "any_alarm": float(np.mean(anys)),
+                        "pd": pd,
+                        "n": len(outs),
+                        "ttd_median": ttd,
+                        "false_loc": fl_mean,
+                    }
+                )
+                print(
+                    f"| {calib_d['config']['dataset']} | {alpha} | {name} | "
+                    f"{label} | {np.mean(fars):.3f} | {np.mean(anys):.3f} | "
+                    f"{pd:.2f} ({len(outs)}) | "
+                    f"{'-' if ttd is None else f'{ttd:.0f}'} | {fl_mean:.1f} |"
+                )
 
     (RESULTS / "scores.json").write_text(json.dumps(summary, indent=1))
     print("\nwrote results/scores.json")

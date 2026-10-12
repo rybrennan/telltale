@@ -1,4 +1,4 @@
-"""Adapters that attach the integrity layer to real federated learning frameworks.
+"""Adapters that attach the integrity layer to real federated frameworks.
 
 The harness in the parent package is deliberately framework-free so that its
 measurements are bitwise reproducible. These adapters are the other half of the

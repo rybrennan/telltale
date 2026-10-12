@@ -3,7 +3,7 @@
 
 Establishes what normal looks like. Every later claim about detecting a
 corrupted node is a claim about departure from this baseline, so the baseline
-has to be characterised first — including how much run-to-run and
+has to be characterised first, including how much run-to-run and
 client-to-client variation exists when nothing is wrong at all.
 
     python scripts/run_baseline.py --rounds 30 --clients 10 --alpha 0.5
@@ -34,14 +34,21 @@ RESULTS = REPO / "results"
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse the baseline's command line into a namespace."""
     p = argparse.ArgumentParser(description="Clean FedAvg baseline.")
     p.add_argument("--clients", type=int, default=10)
     p.add_argument("--rounds", type=int, default=30)
-    p.add_argument("--alpha", type=float, default=0.5, help="Dirichlet concentration")
+    p.add_argument(
+        "--alpha", type=float, default=0.5, help="Dirichlet concentration"
+    )
     p.add_argument("--local-epochs", type=int, default=1)
     p.add_argument("--batch-size", type=int, default=64)
     p.add_argument("--lr", type=float, default=0.01)
-    p.add_argument("--dataset", default="fashion_mnist", choices=["fashion_mnist", "mnist", "deepship"])
+    p.add_argument(
+        "--dataset",
+        default="fashion_mnist",
+        choices=["fashion_mnist", "mnist", "deepship"],
+    )
     p.add_argument("--partition-seed", type=int, default=0)
     p.add_argument("--init-seed", type=int, default=0)
     p.add_argument("--train-seed", type=int, default=0)
@@ -51,6 +58,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    """Train one clean federation, print progress and write the result."""
     args = parse_args()
     cfg = FedConfig(
         n_clients=args.clients,
@@ -69,7 +77,10 @@ def main() -> int:
     print(f"config    {cfg.tag}  fingerprint={cfg.fingerprint()}")
     print(f"loading   {cfg.dataset} ...")
     ds = load_dataset(cfg.dataset)
-    print(f"          train={ds.n_train}  test={ds.test_x.shape[0]}  classes={ds.n_classes}")
+    print(
+        f"          train={ds.n_train}  test={ds.test_x.shape[0]}  "
+        f"classes={ds.n_classes}"
+    )
 
     parts = dirichlet_partition(
         ds.train_y,
@@ -87,25 +98,35 @@ def main() -> int:
     )
     if not args.quiet:
         print("\n          per-client label counts")
-        header = "          cid " + " ".join(f"{k:>5d}" for k in range(ds.n_classes))
+        header = "          cid " + " ".join(
+            f"{k:>5d}" for k in range(ds.n_classes)
+        )
         print(header + "    total")
         for i, row in enumerate(matrix):
             print(
-                f"          {i:>3d} " + " ".join(f"{c:>5d}" for c in row) + f"  {row.sum():>7d}"
+                f"          {i:>3d} "
+                + " ".join(f"{c:>5d}" for c in row)
+                + f"  {row.sum():>7d}"
             )
 
     print(f"\ntraining  {cfg.rounds} rounds, {cfg.n_clients} clients/round")
 
-    def report(rec) -> None:
+    def report(rec) -> None:  # rec: telltale.fedavg.RoundRecord
+        """Print one round's accuracy, loss and wall time."""
         print(
             f"  round {rec.round_idx + 1:>3d}/{cfg.rounds}  "
             f"test_acc {rec.test_acc:.4f}  test_loss {rec.test_loss:.4f}  "
             f"train_loss {rec.mean_train_loss:.4f}  {rec.seconds:.1f}s"
         )
 
-    result = run_federated(cfg, ds, parts, partition_summary=summary, on_round=report)
+    result = run_federated(
+        cfg, ds, parts, partition_summary=summary, on_round=report
+    )
 
-    print(f"\nfinal     test_acc {result.final_acc:.4f}  params {result.n_parameters:,}")
+    print(
+        f"\nfinal     test_acc {result.final_acc:.4f}  params "
+        f"{result.n_parameters:,}"
+    )
 
     RESULTS.mkdir(exist_ok=True)
     out = RESULTS / f"baseline_{cfg.tag}_{cfg.fingerprint()}.json"

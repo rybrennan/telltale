@@ -44,8 +44,10 @@ KINDS = ("bias", "gain", "blur", "label_noise")
 
 @dataclass(frozen=True)
 class FaultSpec:
-    """One fault on one node: its kind, first active round, severity and ramp length.
-    Frozen and fingerprintable, so a result names the fault that produced it.
+    """One fault on one node.
+
+    Holds its kind, first active round, severity and ramp length. Frozen and
+    fingerprintable, so a result names the fault that produced it.
     """
 
     kind: str
@@ -55,13 +57,21 @@ class FaultSpec:
     severity: float
     """Magnitude reached at the end of the ramp, in the units listed above."""
     ramp: int = 0
-    """Rounds over which the magnitude rises linearly to `severity`. 0 = step."""
+    """Rounds over which the magnitude rises linearly to `severity`.
+
+    0 means a step.
+    """
     seed: int = 0
     """Only label_noise draws randomness; derived per (seed, node)."""
 
     def __post_init__(self) -> None:
-        """Reject an unknown kind, a negative node, onset, ramp or severity, and a
-        label_noise severity above 1 (it is a fraction)."""
+        """Validate the spec.
+
+        Raises:
+            ValueError: If the kind is unknown, the node, onset, ramp or
+                severity is negative, or a label_noise severity is above 1
+                (it is a fraction).
+        """
         if self.kind not in KINDS:
             raise ValueError(f"kind must be one of {KINDS}")
         if self.node < 0:
@@ -76,21 +86,39 @@ class FaultSpec:
             raise ValueError("label_noise severity is a fraction in [0, 1]")
 
     def magnitude(self, round_idx: int) -> float:
-        """Severity reached at `round_idx`: 0 before onset, linear over the
-        ramp, `severity` from onset + ramp onward. A step reaches full
-        severity at the onset round itself."""
+        """Return the severity reached at `round_idx`.
+
+        0 before onset, linear over the ramp, `severity` from onset + ramp
+        onward. A step reaches full severity at the onset round itself.
+
+        Args:
+            round_idx: 0-based round index.
+
+        Returns:
+            The fault magnitude in that round.
+        """
         if round_idx < self.onset:
             return 0.0
         if self.ramp == 0:
             return self.severity
-        return self.severity * min(1.0, (round_idx - self.onset + 1) / self.ramp)
+        return self.severity * min(
+            1.0, (round_idx - self.onset + 1) / self.ramp
+        )
 
     def to_dict(self) -> dict:
-        """Plain-dict form; the input to `fingerprint`."""
+        """Return the plain-dict form.
+
+        Returns:
+            The dataclass fields as a dict; the input to `fingerprint`.
+        """
         return asdict(self)
 
     def fingerprint(self) -> str:
-        """Stable 12-hex-digit hash of the spec."""
+        """Return a stable hash of the spec.
+
+        Returns:
+            The first 12 hex digits of the SHA-256 of the sorted-key JSON.
+        """
         blob = json.dumps(self.to_dict(), sort_keys=True)
         return hashlib.sha256(blob.encode()).hexdigest()[:12]
 
@@ -99,7 +127,7 @@ class FaultSpec:
 
 
 def _gaussian_kernel(sigma: float, size: int = 5) -> torch.Tensor:
-    """Normalised (size, size) Gaussian kernel, the outer product of a 1-D one."""
+    """Build a normalised (size, size) Gaussian kernel from a 1-D one."""
     half = size // 2
     ax = torch.arange(-half, half + 1, dtype=torch.float32)
     k1 = torch.exp(-(ax**2) / (2.0 * sigma * sigma))
@@ -108,8 +136,21 @@ def _gaussian_kernel(sigma: float, size: int = 5) -> torch.Tensor:
 
 
 def transform_inputs(x: torch.Tensor, kind: str, m: float) -> torch.Tensor:
-    """Apply an input-space fault of magnitude `m`. Returns a new tensor;
-    never mutates `x`. Identity (same object) at m == 0."""
+    """Apply an input-space fault of magnitude `m`.
+
+    Never mutates `x`.
+
+    Args:
+        x: Input batch, shape (n, channels, height, width).
+        kind: One of "bias", "gain" or "blur".
+        m: Fault magnitude.
+
+    Returns:
+        A new tensor, or `x` itself (same object) at m == 0.
+
+    Raises:
+        ValueError: If `kind` is not an input-space fault.
+    """
     if m == 0.0:
         return x
     if kind == "bias":
@@ -132,7 +173,17 @@ def corrupt_labels(
     The order of corruption is a fixed permutation drawn from `seed`, so the set
     corrupted at magnitude m is a subset of the set corrupted at any m' > m.
     That is what makes a ramp monotone: labels corrupted in round t stay
-    corrupted in round t + 1. Identity (same object) at m == 0.
+    corrupted in round t + 1.
+
+    Args:
+        y: Labels of the shard.
+        m: Fraction of the shard to relabel.
+        n_classes: Number of classes.
+        seed: Seed for the corruption order and offsets.
+
+    Returns:
+        A relabelled copy, or `y` itself (same object) when no sample is
+        relabelled.
     """
     n = int(y.shape[0])
     k = math.floor(m * n)
@@ -152,7 +203,10 @@ def corrupt_labels(
 
 
 def _derive_seed(*parts: int) -> int:
-    """Stable seed from a tuple of ints. Same construction as `fedavg._derive_seed`."""
+    """Derive a stable seed from a tuple of ints.
+
+    Same construction as `fedavg._derive_seed`.
+    """
     h = 0
     for p in parts:
         h = (h * 1_000_003 + int(p)) % (2**31 - 1)
@@ -165,23 +219,42 @@ def make_fault(specs: list[FaultSpec], n_classes: int) -> ShardTransform:
     Specs on different nodes compose; two specs on the same node apply in
     list order. Nodes with no spec, and rounds before onset, pass through
     untouched.
+
+    Args:
+        specs: Fault specs to apply.
+        n_classes: Number of classes, needed by label noise.
+
+    Returns:
+        A callable (client_id, round_idx, x, y) -> (x, y).
     """
     by_node: dict[int, list[FaultSpec]] = {}
     for s in specs:
         by_node.setdefault(s.node, []).append(s)
 
-    def fault(client_id: int, round_idx: int, x: torch.Tensor, y: torch.Tensor):
+    def fault(
+        client_id: int, round_idx: int, x: torch.Tensor, y: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Apply every spec on `client_id` that is active in `round_idx`.
 
-        Label noise rewrites `y`; every other kind transforms `x`. Returns (x, y), the
-        same objects when nothing is active.
+        Label noise rewrites `y`; every other kind transforms `x`.
+
+        Args:
+            client_id: Node whose shard is being transformed.
+            round_idx: Current round.
+            x: Shard inputs.
+            y: Shard labels.
+
+        Returns:
+            (x, y), the same objects when nothing is active.
         """
         for s in by_node.get(client_id, ()):
             m = s.magnitude(round_idx)
             if m == 0.0:
                 continue
             if s.kind == "label_noise":
-                y = corrupt_labels(y, m, n_classes, _derive_seed(s.seed, s.node))
+                y = corrupt_labels(
+                    y, m, n_classes, _derive_seed(s.seed, s.node)
+                )
             else:
                 x = transform_inputs(x, s.kind, m)
         return x, y

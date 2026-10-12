@@ -26,8 +26,9 @@ from dataclasses import asdict, dataclass, field
 
 @dataclass(frozen=True)
 class FedConfig:
-    """Everything that determines a run. Frozen; `fingerprint()` hashes it into the
-    name of the run's result file.
+    """Everything that determines a run.
+
+    Frozen; `fingerprint()` hashes it into the name of the run's result file.
     """
 
     # ── federation ────────────────────────────────────────────────────────
@@ -79,7 +80,14 @@ class FedConfig:
     extra: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        """Reject values that cannot describe a federation, at construction rather than mid-run."""
+        """Reject values that cannot describe a federation.
+
+        Checked at construction rather than mid-run.
+
+        Raises:
+            ValueError: If `n_clients` < 2, `client_fraction` is outside
+                (0, 1], `dirichlet_alpha` <= 0, or `rounds` < 1.
+        """
         if self.n_clients < 2:
             raise ValueError("n_clients must be >= 2 for a federation")
         if not 0.0 < self.client_fraction <= 1.0:
@@ -91,11 +99,18 @@ class FedConfig:
 
     @property
     def clients_per_round(self) -> int:
-        """Clients that report each round: `client_fraction` of `n_clients`, rounded, never below 1."""
+        """Clients that report each round.
+
+        `client_fraction` of `n_clients`, rounded, never below 1.
+        """
         return max(1, round(self.n_clients * self.client_fraction))
 
     def to_dict(self) -> dict:
-        """Plain-dict form; the input to `fingerprint`."""
+        """Plain-dict form; the input to `fingerprint`.
+
+        Returns:
+            Every field of the config as a plain dict.
+        """
         return asdict(self)
 
     def fingerprint(self) -> str:
@@ -104,6 +119,10 @@ class FedConfig:
         Used to name result files so that a run cannot silently overwrite a
         different run, and so a result can always be traced back to the exact
         configuration that produced it.
+
+        Returns:
+            The first 12 hex digits of the SHA-256 of the config's
+            key-sorted JSON form.
         """
         blob = json.dumps(self.to_dict(), sort_keys=True, default=str)
         return hashlib.sha256(blob.encode()).hexdigest()[:12]

@@ -9,5 +9,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-      - run: pip install numpy scipy matplotlib pytest
+      - run: pip install numpy scipy matplotlib pytest ruff
+      - run: ruff check .
       - run: python -m pytest -q

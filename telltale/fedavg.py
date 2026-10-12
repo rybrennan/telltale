@@ -5,7 +5,7 @@ global model, each selected client trains locally for E epochs, and the server
 takes a sample-count-weighted average of the returned parameters.
 
 Runs in-process. There is no networking, no actor scheduling, and no framework
-between the loop and the numbers it produces — which is the point. The output
+between the loop and the numbers it produces, which is the point. The output
 of this harness is a detection probability and a false-alarm rate, and both are
 only as trustworthy as our ability to re-run a configuration and get the same
 answer.
@@ -45,6 +45,9 @@ def seed_everything(seed: int) -> None:
     """Seed the Python, NumPy and torch global generators.
 
     NumPy's legacy seed must be below 2**32, hence the modulus.
+
+    Args:
+        seed: Seed for all three generators.
     """
     random.seed(seed)
     np.random.seed(seed % (2**32))
@@ -57,6 +60,12 @@ def _derive_seed(*parts: int) -> int:
     Deriving per-client seeds this way means a client trains identically
     regardless of how many other clients ran before it in the loop, so results
     do not depend on iteration order.
+
+    Args:
+        *parts: Integers to combine, in order.
+
+    Returns:
+        A seed in [0, 2**31 - 1).
     """
     h = 0
     for p in parts:
@@ -80,8 +89,10 @@ class ClientUpdate:
 
 @dataclass
 class RoundRecord:
-    """One round's outcome: who reported, the global model's test metrics, the mean
-    client training loss, and wall-clock seconds.
+    """One round's outcome.
+
+    Who reported, the global model's test metrics, the mean client training
+    loss, and wall-clock seconds.
     """
 
     round_idx: int
@@ -92,7 +103,12 @@ class RoundRecord:
     seconds: float
 
     def to_dict(self) -> dict:
-        """JSON form. The round index is keyed `round`, not `round_idx`."""
+        """Return the JSON form.
+
+        Returns:
+            A dict of the record's fields. The round index is keyed `round`,
+            not `round_idx`.
+        """
         return {
             "round": self.round_idx,
             "participants": self.participants,
@@ -105,8 +121,10 @@ class RoundRecord:
 
 @dataclass
 class FedResult:
-    """A finished run: config, per-round records, parameter count, the partition's
-    skew summary, and the final global state.
+    """A finished run.
+
+    Holds the config, per-round records, parameter count, the partition's skew
+    summary, and the final global state.
     """
 
     config: FedConfig
@@ -121,12 +139,22 @@ class FedResult:
         return self.rounds[-1].test_acc
 
     def accuracy_curve(self) -> list[float]:
-        """Test accuracy per round, in round order."""
+        """Return test accuracy per round.
+
+        Returns:
+            Test accuracy of each round, in round order.
+        """
         return [r.test_acc for r in self.rounds]
 
     def to_dict(self) -> dict:
-        """JSON-serialisable summary, with the config fingerprint so the file traces to
-        its run. Omits `final_state`.
+        """Return a JSON-serialisable summary.
+
+        Includes the config fingerprint so the file traces to its run. Omits
+        `final_state`.
+
+        Returns:
+            A dict with keys `config`, `fingerprint`, `n_parameters`,
+            `partition_summary`, `rounds` and `final_acc`.
         """
         return {
             "config": self.config.to_dict(),
@@ -148,13 +176,26 @@ def local_train(
     cfg: FedConfig,
     seed: int,
 ) -> tuple[StateDict, float]:
-    """Train `model` in place on one client's shard. Returns (state, mean loss).
+    """Train `model` in place on one client's shard.
 
     Batching is done by hand from a seeded permutation rather than through a
     DataLoader so that batch composition is a pure function of `seed`.
+
+    Args:
+        model: Model to train; modified in place.
+        x: The client's inputs.
+        y: The client's labels.
+        cfg: Run config; supplies epochs, batch size, lr and momentum.
+        seed: Seed for the batch-order generator.
+
+    Returns:
+        A tuple (state, mean loss): a detached copy of the trained state dict
+        and the mean training loss over all batches.
     """
     model.train()
-    optimiser = torch.optim.SGD(model.parameters(), lr=cfg.lr, momentum=cfg.momentum)
+    optimiser = torch.optim.SGD(
+        model.parameters(), lr=cfg.lr, momentum=cfg.momentum
+    )
     criterion = nn.CrossEntropyLoss()
     generator = torch.Generator().manual_seed(seed)
 
@@ -184,7 +225,21 @@ def local_train(
 
 
 def aggregate(updates: Iterable[ClientUpdate]) -> StateDict:
-    """Sample-count-weighted parameter average (the FedAvg server step)."""
+    """Average client parameters weighted by sample count.
+
+    This is the FedAvg server step. Floating-point tensors are accumulated in
+    float64 and cast back to their original dtype.
+
+    Args:
+        updates: Client updates for one round.
+
+    Returns:
+        The aggregated state dict.
+
+    Raises:
+        ValueError: If there are no updates, or their sample counts sum to
+            zero or less.
+    """
     updates = list(updates)
     if not updates:
         raise ValueError("no client updates to aggregate")
@@ -214,7 +269,17 @@ def aggregate(updates: Iterable[ClientUpdate]) -> StateDict:
 def evaluate(
     model: nn.Module, x: torch.Tensor, y: torch.Tensor, batch_size: int = 512
 ) -> tuple[float, float]:
-    """Returns (mean loss, accuracy)."""
+    """Evaluate `model` on a labelled set.
+
+    Args:
+        model: Model to evaluate; switched to eval mode.
+        x: Inputs.
+        y: Labels.
+        batch_size: Samples per forward pass.
+
+    Returns:
+        A tuple (mean loss, accuracy).
+    """
     model.eval()
     criterion = nn.CrossEntropyLoss(reduction="sum")
     total_loss, correct = 0.0, 0
@@ -241,16 +306,29 @@ def _select_participants(
     An explicit `participation` schedule wins; otherwise every client reports,
     or a `client_fraction` sample is drawn. `selection_rng` is only advanced on
     the sampling branch, so a schedule or full participation never perturbs it.
+
+    Raises:
+        ValueError: If the schedule returns no clients or an id outside
+            [0, n_clients).
     """
     if participation is not None:
         participants = sorted({int(c) for c in participation(rnd)})
-        if not participants or participants[0] < 0 or participants[-1] >= cfg.n_clients:
-            raise ValueError(f"participation returned {participants} for {cfg.n_clients} clients")
+        if (
+            not participants
+            or participants[0] < 0
+            or participants[-1] >= cfg.n_clients
+        ):
+            raise ValueError(
+                f"participation returned {participants} "
+                f"for {cfg.n_clients} clients"
+            )
         return participants
     if cfg.clients_per_round >= cfg.n_clients:
         return list(range(cfg.n_clients))
     return sorted(
-        selection_rng.choice(cfg.n_clients, size=cfg.clients_per_round, replace=False).tolist()
+        selection_rng.choice(
+            cfg.n_clients, size=cfg.clients_per_round, replace=False
+        ).tolist()
     )
 
 
@@ -263,15 +341,25 @@ def _client_update(
     cfg: FedConfig,
     fault: ShardTransform | None,
 ) -> ClientUpdate:
-    """One client's round: apply any fault to its shard, train from the global model."""
+    """Run one client's round.
+
+    Applies any fault to the client's shard, then trains from the global
+    model.
+    """
     x, y = shard
     if fault is not None:
         x, y = fault(cid, rnd, x, y)
     local = copy.deepcopy(model)
     local.load_state_dict(global_state)
-    state, loss = local_train(local, x, y, cfg, seed=_derive_seed(cfg.train_seed, rnd, cid))
+    state, loss = local_train(
+        local, x, y, cfg, seed=_derive_seed(cfg.train_seed, rnd, cid)
+    )
     return ClientUpdate(
-        client_id=cid, round_idx=rnd, n_samples=int(x.shape[0]), train_loss=loss, state=state
+        client_id=cid,
+        round_idx=rnd,
+        n_samples=int(x.shape[0]),
+        train_loss=loss,
+        state=state,
     )
 
 
@@ -303,18 +391,46 @@ def run_federated(
     schedule (submarines surfacing every k rounds) reaches the loop. None
     means every client (or the `client_fraction` sample). A schedule that
     returns every client every round is bitwise indistinguishable from None.
+
+    Args:
+        cfg: Run config.
+        dataset: The data; client shards are sliced from its training split.
+        parts: One index array per client, as from `dirichlet_partition`.
+        partition_summary: Skew summary stored on the result; None stores
+            an empty dict.
+        on_round: Called with each `RoundRecord` after the round finishes.
+        update_hook: Called as update_hook(updates, round_idx) before
+            aggregation.
+        fault: Shard transform applied before local training.
+        participation: Per-round schedule of reporting client ids.
+
+    Returns:
+        The finished run.
+
+    Raises:
+        ValueError: If `parts` does not have one entry per client, or a
+            participation schedule returns an invalid client set.
     """
     if len(parts) != cfg.n_clients:
-        raise ValueError(f"got {len(parts)} partitions for {cfg.n_clients} clients")
+        raise ValueError(
+            f"got {len(parts)} partitions for {cfg.n_clients} clients"
+        )
 
     seed_everything(cfg.init_seed)
-    model = build_model("small_cnn", dataset.n_classes, cfg.init_seed, cfg.device)
-    global_state = {k: v.detach().clone() for k, v in model.state_dict().items()}
+    model = build_model(
+        "small_cnn", dataset.n_classes, cfg.init_seed, cfg.device
+    )
+    global_state = {
+        k: v.detach().clone() for k, v in model.state_dict().items()
+    }
     n_params = count_parameters(model)
 
     # Pre-slice each client's shard once rather than indexing every round.
     shards = [
-        (dataset.train_x[idx].to(cfg.device), dataset.train_y[idx].to(cfg.device))
+        (
+            dataset.train_x[idx].to(cfg.device),
+            dataset.train_y[idx].to(cfg.device),
+        )
         for idx in parts
     ]
     test_x = dataset.test_x.to(cfg.device)
@@ -326,9 +442,13 @@ def run_federated(
     for rnd in range(cfg.rounds):
         started = time.perf_counter()
 
-        participants = _select_participants(rnd, cfg, participation, selection_rng)
+        participants = _select_participants(
+            rnd, cfg, participation, selection_rng
+        )
         updates = [
-            _client_update(model, global_state, shards[cid], cid, rnd, cfg, fault)
+            _client_update(
+                model, global_state, shards[cid], cid, rnd, cfg, fault
+            )
             for cid in participants
         ]
 
@@ -337,7 +457,9 @@ def run_federated(
 
         global_state = aggregate(updates)
         model.load_state_dict(global_state)
-        test_loss, test_acc = evaluate(model, test_x, test_y, cfg.eval_batch_size)
+        test_loss, test_acc = evaluate(
+            model, test_x, test_y, cfg.eval_batch_size
+        )
 
         record = RoundRecord(
             round_idx=rnd,

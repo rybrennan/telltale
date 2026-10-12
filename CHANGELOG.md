@@ -2,6 +2,14 @@
 
 Stages were tagged in the private working repository. This public repository is a single squashed release (`v0.6.0`); each entry below states what that stage claimed and what it did not.
 
+## Unreleased: Google Python style pass (no behaviour change)
+- Every line at 80 columns or fewer; Google-style docstrings with Args, Returns and
+  Raises on the library's public functions; type hints on every signature.
+- `pyproject.toml` holds the ruff configuration, and CI now runs `ruff check`.
+- Verified behaviour-preserving: all 102 tests pass, and a golden master over 295
+  outputs (seeded training runs, partitions, CUSUM, and every result script, figure
+  and results file over the 276 probe arrays) is byte-identical before and after.
+
 ## v0.6.0 (2026-09-23): the layer as a Flower strategy
 - `telltale.integrations.flower.IntegrityFedAvg`, a Flower `FedAvg` subclass: nodes return
   probe scores (float16, about 1 kB) in the fit-result metrics; the strategy runs the same

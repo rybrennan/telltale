@@ -2,7 +2,7 @@
 
 The whole dataset is held in memory as tensors and batched by hand rather than
 through a DataLoader. With 60k 28x28 images that costs ~180MB and removes
-worker scheduling from the reproducibility surface — batch order becomes a
+worker scheduling from the reproducibility surface: batch order becomes a
 pure function of a seed.
 """
 
@@ -37,32 +37,56 @@ class Dataset:
         return int(self.train_x.shape[0])
 
 
-def load_dataset(name: str = "fashion_mnist", root: Path | None = None) -> Dataset:
-    """Load a standard public dataset into normalised in-memory tensors."""
+def load_dataset(
+    name: str = "fashion_mnist", root: Path | None = None
+) -> Dataset:
+    """Load a standard public dataset into normalised in-memory tensors.
+
+    Args:
+        name: "fashion_mnist", "mnist", or "deepship" (the acoustic second
+            modality, see acoustic.py).
+        root: Directory holding the downloaded data; created if missing.
+            Defaults to `DEFAULT_ROOT`.
+
+    Returns:
+        The train and test splits as normalised tensors.
+
+    Raises:
+        ValueError: If `name` is not a known dataset.
+    """
     root = Path(root) if root is not None else DEFAULT_ROOT
     root.mkdir(parents=True, exist_ok=True)
 
     if name == "deepship":
         from .acoustic import load_deepship  # second modality; see acoustic.py
 
-        return load_deepship(root / "deepship", cache=root / "deepship_28x28.pt")
+        return load_deepship(
+            root / "deepship", cache=root / "deepship_28x28.pt"
+        )
 
-    from torchvision import datasets  # imported lazily; only needed on first download
+    # Imported lazily; only needed on first download.
+    from torchvision import datasets
 
-    ctor = {"fashion_mnist": datasets.FashionMNIST, "mnist": datasets.MNIST}.get(name)
+    ctors = {"fashion_mnist": datasets.FashionMNIST, "mnist": datasets.MNIST}
+    ctor = ctors.get(name)
     if ctor is None:
-        raise ValueError(f"unknown dataset {name!r}; expected one of {list(_NORM) + ['deepship']}")
+        known = list(_NORM) + ["deepship"]
+        raise ValueError(f"unknown dataset {name!r}; expected one of {known}")
 
     train = ctor(root=str(root), train=True, download=True)
     test = ctor(root=str(root), train=False, download=True)
     mean, std = _NORM[name]
 
-    def prep(split) -> tuple[torch.Tensor, torch.Tensor]:
-        """Raw uint8 split -> (N, 1, 28, 28) float32 scaled to [0, 1] then standardised,
-        and int64 labels.
+    def prep(split: datasets.MNIST) -> tuple[torch.Tensor, torch.Tensor]:
+        """Convert a raw uint8 split to model-ready tensors.
+
+        Images become (N, 1, 28, 28) float32, scaled to [0, 1] then
+        standardised; labels become int64.
         """
         x = split.data.to(torch.float32).div_(255.0).sub_(mean).div_(std)
-        return x.unsqueeze(1).contiguous(), split.targets.to(torch.int64).contiguous()
+        images = x.unsqueeze(1).contiguous()
+        labels = split.targets.to(torch.int64).contiguous()
+        return images, labels
 
     train_x, train_y = prep(train)
     test_x, test_y = prep(test)
@@ -95,12 +119,33 @@ def dirichlet_partition(
     label skew makes one node's model genuinely differ from its peers, which is
     precisely the signature a naive integrity detector would flag as
     corruption. Characterising the detector across alpha is therefore not a
-    robustness afterthought — it is the experiment.
+    robustness afterthought; it is the experiment.
 
-    Returns one sorted index array per client; every index is assigned exactly
-    once, and no client falls below `min_client_samples`.
+    Args:
+        labels: Label of every sample, shape (N,).
+        n_clients: Number of clients to split across.
+        alpha: Dirichlet concentration; lower is more heterogeneous.
+        seed: Partition seed. Attempt `a` draws from the stream
+            `default_rng([seed, a])`.
+        min_client_samples: Redraw any partition that leaves a client with
+            fewer samples than this.
+        max_tries: Number of draws before giving up.
+
+    Returns:
+        One sorted index array per client; every index is assigned exactly
+        once, and no client falls below `min_client_samples`.
+
+    Raises:
+        ValueError: If `n_clients * min_client_samples` exceeds the number of
+            samples.
+        RuntimeError: If no draw within `max_tries` meets
+            `min_client_samples`.
     """
-    y = labels.numpy() if isinstance(labels, torch.Tensor) else np.asarray(labels)
+    y = (
+        labels.numpy()
+        if isinstance(labels, torch.Tensor)
+        else np.asarray(labels)
+    )
     n_classes = int(y.max()) + 1
     total = len(y)
 
@@ -113,7 +158,8 @@ def dirichlet_partition(
     idx_by_class = [np.where(y == k)[0] for k in range(n_classes)]
 
     for attempt in range(max_tries):
-        # A distinct stream per attempt keeps redraws deterministic given the seed.
+        # A distinct stream per attempt keeps redraws deterministic given the
+        # seed.
         rng = np.random.default_rng([seed, attempt])
         parts = _draw_partition(idx_by_class, n_clients, alpha, rng)
         if min(p.size for p in parts) >= min_client_samples:
@@ -128,9 +174,14 @@ def dirichlet_partition(
 
 
 def _draw_partition(
-    idx_by_class: list[np.ndarray], n_clients: int, alpha: float, rng: np.random.Generator
+    idx_by_class: list[np.ndarray],
+    n_clients: int,
+    alpha: float,
+    rng: np.random.Generator,
 ) -> list[np.ndarray]:
-    """One Dirichlet draw: every class split across clients, indices sorted per client.
+    """Make one Dirichlet draw: every class split across clients.
+
+    Indices are sorted per client.
 
     Per class the generator is advanced in a fixed order (shuffle, then the
     proportion vector), so a draw is a pure function of `rng`'s state.
@@ -146,24 +197,45 @@ def _draw_partition(
             if chunk.size:
                 buckets[client].append(chunk)
     return [
-        np.sort(np.concatenate(b)) if b else np.empty(0, dtype=np.int64) for b in buckets
+        np.sort(np.concatenate(b)) if b else np.empty(0, dtype=np.int64)
+        for b in buckets
     ]
 
 
 def _assert_exact_partition(parts: list[np.ndarray], total: int) -> None:
-    """Every index used exactly once. Cheap, and catches silent data loss."""
+    """Check every index is used exactly once.
+
+    Cheap, and catches silent data loss.
+    """
     joined = np.concatenate(parts)
     if joined.size != total:
-        raise AssertionError(f"partition covers {joined.size} of {total} samples")
+        raise AssertionError(
+            f"partition covers {joined.size} of {total} samples"
+        )
     if np.unique(joined).size != total:
-        raise AssertionError("partition assigns some index to more than one client")
+        raise AssertionError(
+            "partition assigns some index to more than one client"
+        )
 
 
 def partition_label_matrix(
     labels: torch.Tensor | np.ndarray, parts: list[np.ndarray], n_classes: int
 ) -> np.ndarray:
-    """(n_clients, n_classes) count matrix. Used for reporting skew."""
-    y = labels.numpy() if isinstance(labels, torch.Tensor) else np.asarray(labels)
+    """Count each client's samples per class. Used for reporting skew.
+
+    Args:
+        labels: Label of every sample, shape (N,).
+        parts: One index array per client, as from `dirichlet_partition`.
+        n_classes: Number of classes (matrix columns).
+
+    Returns:
+        An int64 count matrix of shape (n_clients, n_classes).
+    """
+    y = (
+        labels.numpy()
+        if isinstance(labels, torch.Tensor)
+        else np.asarray(labels)
+    )
     m = np.zeros((len(parts), n_classes), dtype=np.int64)
     for i, idx in enumerate(parts):
         counts = np.bincount(y[idx], minlength=n_classes)
@@ -179,6 +251,14 @@ def skew_summary(matrix: np.ndarray) -> dict:
     balanced, and it approaches 1 - 1/n_classes as clients specialise. Reported
     so that a run records the skew it actually drew, not just the alpha that
     was requested.
+
+    Args:
+        matrix: (n_clients, n_classes) count matrix, as from
+            `partition_label_matrix`.
+
+    Returns:
+        A dict with keys `client_sizes`, `min_client_size`,
+        `max_client_size`, `mean_tv_from_uniform` and `max_tv_from_uniform`.
     """
     sizes = matrix.sum(axis=1)
     props = matrix / np.maximum(sizes[:, None], 1)

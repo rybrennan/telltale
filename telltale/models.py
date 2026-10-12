@@ -21,7 +21,12 @@ class SmallCNN(nn.Module):
     """~200k parameter CNN for 28x28 single-channel inputs."""
 
     def __init__(self, n_classes: int = 10, in_channels: int = 1) -> None:
-        """`in_channels`-channel 28x28 input, `n_classes` output logits."""
+        """Build the layers for 28x28 input.
+
+        Args:
+            n_classes: Number of output logits.
+            in_channels: Channels of the 28x28 input image.
+        """
         super().__init__()
         self.features = nn.Sequential(
             nn.Conv2d(in_channels, 16, kernel_size=3, padding=1),
@@ -39,15 +44,37 @@ class SmallCNN(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Logits, shape (batch, n_classes)."""
+        """Compute class logits.
+
+        Args:
+            x: Input batch, shape (batch, in_channels, 28, 28).
+
+        Returns:
+            Logits, shape (batch, n_classes).
+        """
         return self.classifier(self.features(x))
 
 
-def build_model(name: str, n_classes: int, seed: int, device: str = "cpu") -> nn.Module:
+def build_model(
+    name: str, n_classes: int, seed: int, device: str = "cpu"
+) -> nn.Module:
     """Construct a model with deterministic initialisation.
 
     All clients start from a single server-initialised model, so this is called
     once per run, not once per client.
+
+    Args:
+        name: Model name; only "small_cnn" is known.
+        n_classes: Number of output classes.
+        seed: Seed for torch's global generator, set just before the layers
+            are initialised.
+        device: Torch device to place the model on.
+
+    Returns:
+        The initialised model on `device`.
+
+    Raises:
+        ValueError: If `name` is not a known model.
     """
     if name != "small_cnn":
         raise ValueError(f"unknown model {name!r}")
@@ -56,5 +83,12 @@ def build_model(name: str, n_classes: int, seed: int, device: str = "cpu") -> nn
 
 
 def count_parameters(model: nn.Module) -> int:
-    """Number of trainable parameters."""
+    """Count trainable parameters.
+
+    Args:
+        model: The model to inspect.
+
+    Returns:
+        Total element count over parameters with `requires_grad`.
+    """
     return sum(p.numel() for p in model.parameters() if p.requires_grad)

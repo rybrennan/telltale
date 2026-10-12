@@ -1,4 +1,4 @@
-"""telltale — a measurement harness for federated aggregation integrity.
+"""telltale: a measurement harness for federated aggregation integrity.
 
 Scope, held deliberately narrow:
 
@@ -8,9 +8,9 @@ Explicitly out of scope: edge appliance integration, a bespoke federated
 learning framework, deployment tooling, or anything resembling a product.
 
 Build order:
-    1. clean baseline federation            (this layer — fedavg / data / models)
-    2. probe batteries and divergence       (probes / detect)  — done
-    3. fault injection with known ground truth (faults)  — done
+    1. clean baseline federation            (this layer: fedavg, data, models)
+    2. probe batteries and divergence       (probes, detect): done
+    3. fault injection with known ground truth (faults): done
     4. Pd / FAR / time-to-detection curves  (metrics)
 """
 

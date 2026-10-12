@@ -41,17 +41,37 @@ class Threshold:
     fifteen values is not a ceiling; report this next to every threshold."""
 
     def to_dict(self) -> dict:
-        """Plain-dict form, for the results JSON."""
+        """Plain-dict form, for the results JSON.
+
+        Returns:
+            The dataclass fields as a dict.
+        """
         return asdict(self)
 
 
 def calibrate(
-    healthy: np.ndarray, statistic: str, burn_in: int, quantile: float | None = None
+    healthy: np.ndarray,
+    statistic: str,
+    burn_in: int,
+    quantile: float | None = None,
 ) -> Threshold:
     """Threshold from a healthy (rounds, nodes) statistic series.
 
-    `quantile=None` takes the healthy maximum after burn-in; otherwise the
-    given quantile of the healthy node-rounds. NaN entries are ignored.
+    NaN entries are ignored.
+
+    Args:
+        healthy: (rounds, nodes) statistic series from a healthy run.
+        statistic: Name of the statistic, recorded on the threshold.
+        burn_in: Leading rounds excluded from calibration.
+        quantile: None takes the healthy maximum after burn-in; otherwise
+            the given quantile of the healthy node-rounds.
+
+    Returns:
+        The calibrated threshold.
+
+    Raises:
+        ValueError: If `burn_in` is outside the run, no finite healthy value
+            remains after burn-in, or `quantile` is outside (0, 1].
     """
     if not 0 <= burn_in < healthy.shape[0]:
         raise ValueError("burn_in must be within the run")
@@ -60,15 +80,32 @@ def calibrate(
     if pool.size == 0:
         raise ValueError("no finite healthy values after burn_in")
     if quantile is None:
-        return Threshold(statistic, float(pool.max()), burn_in, "max", int(pool.size))
+        return Threshold(
+            statistic, float(pool.max()), burn_in, "max", int(pool.size)
+        )
     if not 0.0 < quantile <= 1.0:
         raise ValueError("quantile must be in (0, 1]")
-    return Threshold(statistic, float(np.quantile(pool, quantile)), burn_in, f"quantile:{quantile}", int(pool.size))
+    return Threshold(
+        statistic,
+        float(np.quantile(pool, quantile)),
+        burn_in,
+        f"quantile:{quantile}",
+        int(pool.size),
+    )
 
 
 def flags(series: np.ndarray, thr: Threshold) -> np.ndarray:
-    """(rounds, nodes) bool: statistic strictly above threshold, after burn-in.
-    NaN never flags."""
+    """Flag node-rounds whose statistic is strictly above the threshold.
+
+    Rounds before burn-in are never flagged, and NaN never flags.
+
+    Args:
+        series: (rounds, nodes) statistic series.
+        thr: Threshold to compare against.
+
+    Returns:
+        (rounds, nodes) bool flag matrix.
+    """
     out = np.zeros(series.shape, dtype=bool)
     with np.errstate(invalid="ignore"):
         above = series > thr.value
@@ -78,10 +115,27 @@ def flags(series: np.ndarray, thr: Threshold) -> np.ndarray:
 
 
 def calibrate_by_class(
-    healthy: np.ndarray, classes: np.ndarray, statistic: str, burn_in: int, quantile: float | None = None
+    healthy: np.ndarray,
+    classes: np.ndarray,
+    statistic: str,
+    burn_in: int,
+    quantile: float | None = None,
 ) -> dict:
-    """One Threshold per platform class, each from that class's healthy
-    node-rounds only. A submarine's healthy ceiling is not a ship's."""
+    """One Threshold per platform class, from that class's healthy rounds.
+
+    Each threshold is taken over that class's healthy node-rounds only. A
+    submarine's healthy ceiling is not a ship's.
+
+    Args:
+        healthy: (rounds, nodes) statistic series from a healthy run.
+        classes: (nodes,) platform-class label per node.
+        statistic: Name of the statistic, recorded on each threshold.
+        burn_in: Leading rounds excluded from calibration.
+        quantile: As in `calibrate`.
+
+    Returns:
+        Dict mapping each class label to its Threshold.
+    """
     classes = np.asarray(classes)
     return {
         cls: calibrate(healthy[:, classes == cls], statistic, burn_in, quantile)
@@ -89,8 +143,19 @@ def calibrate_by_class(
     }
 
 
-def flags_by_class(series: np.ndarray, thresholds: dict, classes: np.ndarray) -> np.ndarray:
-    """(rounds, nodes) bool: each node judged against its own class's threshold."""
+def flags_by_class(
+    series: np.ndarray, thresholds: dict, classes: np.ndarray
+) -> np.ndarray:
+    """Flag each node against its own class's threshold.
+
+    Args:
+        series: (rounds, nodes) statistic series.
+        thresholds: Class label to Threshold, as from `calibrate_by_class`.
+        classes: (nodes,) platform-class label per node.
+
+    Returns:
+        (rounds, nodes) bool flag matrix.
+    """
     classes = np.asarray(classes)
     out = np.zeros(series.shape, dtype=bool)
     for cls, thr in thresholds.items():
@@ -100,19 +165,28 @@ def flags_by_class(series: np.ndarray, thresholds: dict, classes: np.ndarray) ->
 
 
 def false_alarm_rate(healthy: np.ndarray, thr: Threshold) -> float:
-    """Fraction of healthy node-rounds after burn-in that are flagged."""
+    """Fraction of healthy node-rounds after burn-in that are flagged.
+
+    Args:
+        healthy: (rounds, nodes) statistic series from a healthy run.
+        thr: Threshold to apply.
+
+    Returns:
+        The flagged fraction, or NaN if no rounds remain after burn-in.
+    """
     f = flags(healthy, thr)[thr.burn_in :]
     return float(f.mean()) if f.size else float("nan")
 
 
 @dataclass(frozen=True)
 class DetectionOutcome:
-    """How one faulted run scored against its target node and the rest of the fleet."""
+    """How one faulted run scored against its target node and the fleet."""
 
     detected: bool
     detection_round: int | None
     time_to_detection: int | None
-    """Rounds from onset to first flag on the target node; 0 = the onset round."""
+    """Rounds from onset to first flag on the target node; 0 = the onset
+    round."""
     false_localisations: int
     """Non-target node-rounds flagged after burn-in."""
     target_flag_count: int
@@ -122,7 +196,11 @@ class DetectionOutcome:
     when the node reports every round."""
 
     def to_dict(self) -> dict:
-        """Plain-dict form, for the results JSON."""
+        """Plain-dict form, for the results JSON.
+
+        Returns:
+            The dataclass fields as a dict.
+        """
         return asdict(self)
 
 
@@ -135,16 +213,45 @@ def score_fault_run(
 ) -> DetectionOutcome:
     """Hit / miss / time to detection for one fault run's statistic series.
 
-    `observed` is an optional (rounds, nodes) contact mask; without it every
-    node is taken to report every round.
+    Args:
+        series: (rounds, nodes) statistic series from a faulted run.
+        thr: Threshold to apply.
+        target: Index of the faulted node.
+        onset: Round the fault starts.
+        observed: Optional (rounds, nodes) contact mask; without it every
+            node is taken to report every round.
+
+    Returns:
+        The scored outcome.
     """
     return score_flags(flags(series, thr), thr.burn_in, target, onset, observed)
 
 
 def score_flags(
-    f: np.ndarray, burn_in: int, target: int, onset: int, observed: np.ndarray | None = None
+    f: np.ndarray,
+    burn_in: int,
+    target: int,
+    onset: int,
+    observed: np.ndarray | None = None,
 ) -> DetectionOutcome:
-    """Score a precomputed (rounds, nodes) flag matrix, e.g. from `flags_by_class`."""
+    """Score a precomputed (rounds, nodes) flag matrix.
+
+    For example one from `flags_by_class`.
+
+    Args:
+        f: (rounds, nodes) bool flag matrix.
+        burn_in: Leading rounds not counted.
+        target: Index of the faulted node.
+        onset: Round the fault starts.
+        observed: Optional (rounds, nodes) contact mask; without it every
+            node is taken to report every round.
+
+    Returns:
+        The scored outcome.
+
+    Raises:
+        ValueError: If `target` is not a valid node index.
+    """
     R, K = f.shape
     if not 0 <= target < K:
         raise ValueError("target node out of range")
@@ -155,12 +262,17 @@ def score_flags(
     others[target] = False
     contacts = None
     if detection_round is not None:
-        mask = np.ones(R, dtype=bool) if observed is None else observed[:, target]
+        mask = (
+            np.ones(R, dtype=bool) if observed is None else observed[:, target]
+        )
         contacts = int(mask[onset : detection_round + 1].sum())
+    time_to_detection = (
+        None if detection_round is None else detection_round - onset
+    )
     return DetectionOutcome(
         detected=detection_round is not None,
         detection_round=detection_round,
-        time_to_detection=None if detection_round is None else detection_round - onset,
+        time_to_detection=time_to_detection,
         false_localisations=int(f[burn_in:, others].sum()),
         target_flag_count=int(f[start:, target].sum()),
         contacts_to_detection=contacts,
@@ -168,7 +280,16 @@ def score_flags(
 
 
 def detection_probability(outcomes: list[DetectionOutcome]) -> float:
-    """Fraction of fault runs detected. Over seeds, this is Pd at one grid point."""
+    """Fraction of fault runs detected.
+
+    Over seeds, this is Pd at one grid point.
+
+    Args:
+        outcomes: Scored outcomes, one per fault run.
+
+    Returns:
+        The detected fraction, or NaN for an empty list.
+    """
     if not outcomes:
         return float("nan")
     return float(np.mean([o.detected for o in outcomes]))
