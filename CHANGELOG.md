@@ -12,8 +12,9 @@ Stages were tagged in the private working repository. This public repository is 
 - `scripts/nvflare_eval.py`: 36 simulator runs. Every site reporting: blur caught in 3 of 3 seeds
   at every heterogeneity level, 4 to 9 rounds after onset, 0 to 1% held-out false alarms.
   Six of ten sites sampled per round: unchanged near-IID, 1 of 3 at moderate skew, 0 of 3 at
-  severe skew, because a rotating peer set roughly doubles the healthy level's variability
-  under skew.
+  severe skew: a rotating peer set raises the healthy level's variability by a quarter at
+  moderate skew and nearly doubles it at severe skew, and the calibrated threshold rises past
+  the fault.
 - The probe-score wire format moves to `telltale/integrations/wire.py`, shared by both adapters.
   `pyproject.toml` makes the package installable (`pip install -e ".[nvflare]"`).
 - Eleven integration tests, in the repository's Google style and ruff-clean. 113 tests in
