@@ -44,6 +44,10 @@ from seeds, runs on a laptop CPU, ships as a container (`Dockerfile`).
 - The same layer runs inside a real Flower federation (gRPC, five client processes): a slow
   drift was flagged on the right node seven rounds after onset, 1,000 bytes per node per round,
   and quarantined from aggregation. One run per condition; see "Integration: the layer inside Flower".
+- The same layer runs as an NVIDIA FLARE aggregator (`examples/nvflare/`). With every site
+  reporting, a slow blur was caught in every seed at every heterogeneity level, four to nine
+  rounds after onset. With six of ten sites sampled per round it holds near-IID and degrades
+  under skew (1 of 3 seeds moderate, 0 of 3 severe); the cause is measured in the example README.
 - Where it fails: gain drift; severe heterogeneity, where detection depends on which node is
   faulted; intervals from three seeds.
 
@@ -131,6 +135,7 @@ Three properties follow from that design, and each maps to a real constraint:
 | 4. Pd / FAR / time-to-detection curves | `metrics` | ✅ **done** (3 seeds; intervals are wide) |
 | 5. Second modality: underwater acoustics | `acoustic` | ✅ **done** (3 seeds) |
 | 6. Framework integration: Flower | `integrations/flower` | ✅ **done** (demonstration, one run per condition) |
+| 7. Framework integration: NVIDIA FLARE | `integrations/nvflare` | ✅ **done** (grid across heterogeneity and partial participation, 3 seeds) |
 
 ## Why there is no Flower or Ray
 
@@ -628,6 +633,16 @@ on one host over loopback; this is integration, not tactical deployment. It uses
 SuperNode); porting to that CLI or to NVIDIA FLARE is Phase 2 work. Tests:
 `tests/test_flower_integration.py`, including one that pins the known limit (drift toward the
 fleet is not flagged by the one-sided statistic).
+
+## Integration: the layer inside NVIDIA FLARE
+
+`telltale/integrations/nvflare.py` packages the layer as an NVFlare `ModelAggregator`
+(`IntegrityAggregator`), following the design agreed on
+[NVIDIA/NVFlare#5398](https://github.com/NVIDIA/NVFlare/issues/5398): probe reports travel in
+`FLModel.meta`, the detector history stays on the server, and client exclusion is off by default.
+`examples/nvflare/` is a runnable FedAvg job in NVFlare's own example layout, and its README holds
+the detection-delay and false-alarm results across heterogeneity and partial participation
+(36 simulator runs, `scripts/nvflare_eval.py`).
 
 ## Usage
 
