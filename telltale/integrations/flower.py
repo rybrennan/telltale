@@ -28,6 +28,7 @@ from typing import Any
 import numpy as np
 
 from ..detect import cusum, level_series
+from .wire import decode_scores, encode_scores  # noqa: F401  (re-exported)
 
 try:
     from flwr.common import FitRes, Parameters, Scalar
@@ -43,38 +44,6 @@ except ImportError as exc:  # pragma: no cover
 PROBE_KEY = "probe_scores"
 FINGERPRINT_KEY = "battery_fingerprint"
 NODE_KEY = "node_id"
-
-
-def encode_scores(probs: np.ndarray) -> bytes:
-    """Encode probabilities as float16 bytes; this is the payload.
-
-    Args:
-        probs: (n_probes, n_classes) class probabilities.
-
-    Returns:
-        The raw float16 bytes in C order.
-    """
-    return np.asarray(probs, dtype=np.float16).tobytes()
-
-
-def decode_scores(blob: bytes, n_probes: int, n_classes: int) -> np.ndarray:
-    """Decode float16 bytes; the inverse of `encode_scores`.
-
-    Values come back at float16 precision; that is the wire format.
-
-    Args:
-        blob: Payload produced by `encode_scores`.
-        n_probes: Number of probes in the battery.
-        n_classes: Number of classes per row.
-
-    Returns:
-        (n_probes, n_classes) float32 probabilities.
-    """
-    return (
-        np.frombuffer(blob, dtype=np.float16)
-        .reshape(n_probes, n_classes)
-        .astype(np.float32)
-    )
 
 
 @dataclass

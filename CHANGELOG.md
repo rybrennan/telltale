@@ -2,6 +2,23 @@
 
 Stages were tagged in the private working repository. This public repository is a single squashed release (`v0.6.0`); each entry below states what that stage claimed and what it did not.
 
+## v0.7.0 (2026-10-13): the layer as an NVIDIA FLARE aggregator
+- `telltale.integrations.nvflare.IntegrityAggregator`, an NVFlare `ModelAggregator`: sites return
+  probe scores (float16, 1,000 bytes) in `FLModel.meta`; the aggregator keeps the detector history
+  on the server and runs the same `level_series` and `cusum`; client exclusion is off by default.
+  Built on the released NVFlare 2.7.3. Design from NVIDIA/NVFlare#5398.
+- `examples/nvflare/`: a `FedAvgRecipe` job and a Client API training script, laid out like
+  NVFlare's own examples.
+- `scripts/nvflare_eval.py`: 36 simulator runs. Every site reporting: blur caught in 3 of 3 seeds
+  at every heterogeneity level, 4 to 9 rounds after onset, 0 to 1% held-out false alarms.
+  Six of ten sites sampled per round: unchanged near-IID, 1 of 3 at moderate skew, 0 of 3 at
+  severe skew, because a rotating peer set roughly doubles the healthy level's variability
+  under skew.
+- The probe-score wire format moves to `telltale/integrations/wire.py`, shared by both adapters.
+  `pyproject.toml` makes the package installable (`pip install -e ".[nvflare]"`).
+- Eleven integration tests, in the repository's Google style and ruff-clean. 113 tests in
+  total; CI installs NVFlare.
+
 ## Unreleased: Google Python style pass (no behaviour change)
 - Every line at 80 columns or fewer; Google-style docstrings with Args, Returns and
   Raises on the library's public functions; type hints on every signature.
