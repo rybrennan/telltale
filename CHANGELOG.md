@@ -6,7 +6,7 @@ Stages were tagged in the private working repository. This public repository is 
 - `telltale.integrations.nvflare.IntegrityAggregator`, an NVFlare `ModelAggregator`: sites return
   probe scores (float16, 1,000 bytes) in `FLModel.meta`; the aggregator keeps the detector history
   on the server and runs the same `level_series` and `cusum`; client exclusion is off by default.
-  Built on the released NVFlare 2.7.3. Design from NVIDIA/NVFlare#5398.
+  Built on the released NVFlare 2.7.3 and checked on 2.9.0. Design from NVIDIA/NVFlare#5398.
 - `examples/nvflare/`: a `FedAvgRecipe` job and a Client API training script, laid out like
   NVFlare's own examples.
 - `scripts/nvflare_eval.py`: 36 simulator runs. Every site reporting: blur caught in 3 of 3 seeds

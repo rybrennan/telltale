@@ -45,7 +45,7 @@ from seeds, runs on a laptop CPU, ships as a container (`Dockerfile`).
   drift was flagged on the right node seven rounds after onset, 1,000 bytes per node per round,
   and quarantined from aggregation. One run per condition; see "Integration: the layer inside Flower".
 - The same layer runs as an NVIDIA FLARE aggregator (`examples/nvflare/`). With every site
-  reporting, a slow blur was caught in every seed at every heterogeneity level, four to nine
+  reporting, a slow blur was caught in every seed at every heterogeneity level, one to nine
   rounds after onset. With six of ten sites sampled per round it holds near-IID and degrades
   under skew (1 of 3 seeds moderate, 0 of 3 severe); the cause is measured in the example README.
 - Where it fails: gain drift; severe heterogeneity, where detection depends on which node is

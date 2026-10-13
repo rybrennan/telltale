@@ -28,11 +28,12 @@ From the repository root, in a virtual environment:
 python -m pip install -e ".[nvflare]"
 ```
 
-This installs NVFlare 2.7.3 or later with PyTorch. The first run downloads Fashion-MNIST
+This installs NVFlare 2.7.3 or later with PyTorch; the example was run on 2.7.3 and
+checked on 2.9.0. The first run downloads Fashion-MNIST
 into `data/`.
 
-Note: in NVFlare 2.7.3 the simulator launches its subprocess with an unquoted interpreter
-path, so the virtual environment's path must not contain spaces.
+Note: NVFlare's simulator (2.7.3 and 2.9.0) launches its subprocess with an unquoted
+interpreter path, so the virtual environment's path must not contain spaces.
 
 ## Run
 
@@ -77,7 +78,8 @@ interval, not a probability. Summary: `results/nvflare_eval.json`.
 | 0.1 (severe) | 6 of 10 | 6.54 | 0 / 180 | 0 / 3 [0.00, 0.56] | none |
 
 With every site reporting, the slow blur is caught in every seed at every heterogeneity
-level, four to nine rounds after onset, with at most one healthy site also flagged in a run.
+level, one to nine rounds after onset (the one-round case is discussed below), with at most
+one healthy site also flagged in a run.
 This matches the in-process harness (CUSUM, blur 1.5 px: caught in 3 of 3 seeds at every
 alpha). The one-round detection at alpha 0.1 is in the cell whose threshold is lowest; at a
 1% per-contact false-alarm rate, the chance of a false flag on that one site somewhere in the
