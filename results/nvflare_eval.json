@@ -1,5 +1,5 @@
 {
-  "protocol": "Score the NVFlare integration across heterogeneity and participation.\n\nMeasures detection delay and false-alarm rate. Runs examples/nvflare/job.py\nin the NVFlare simulator over a grid and scores the aggregator's recorded\nhistories with the stage-4 protocol from the README:\n\n    cells          alpha in {100, 0.5, 0.1} x participation in {1.0, 0.6}\n    per cell       healthy train seeds 0, 1, 2, and a blur fault (1.5 px,\n                   site-3, onset round 15, ten-round ramp) on seeds 0, 1, 2\n    threshold      CUSUM healthy maximum after the reference epoch, seed 0,\n                   per cell; it never sees a fault\n    false alarms   counted on held-out healthy seeds 1 and 2, per client\n                   contact\n    delay          rounds from onset to the first flag on the faulted client\n\nEvery run records CUSUM with no threshold set; the threshold is applied\nafterwards, so calibration and scoring use exactly the histories the\naggregator wrote.\n\n    python scripts/nvflare_eval.py run --jobs 3   # every missing cell (~1 h)\n    python scripts/nvflare_eval.py score          # tables + results json\n",
+  "protocol": "Score the NVFlare integration across heterogeneity and participation.\n\nMeasures detection delay and false-alarm rate. Runs examples/nvflare/job.py\nin the NVFlare simulator over a grid and scores the aggregator's recorded\nhistories with the stage-4 protocol from the README:\n\n    cells          alpha in {100, 0.5, 0.1} x participation in {1.0, 0.6}\n    per cell       healthy train seeds 0-5, and a blur fault (1.5 px,\n                   site-3, onset round 15, ten-round ramp) on seeds 0-5\n    threshold      CUSUM healthy maximum after the reference epoch, seed 0,\n                   per cell; it never sees a fault\n    false alarms   counted on held-out healthy seeds 1-5, per client\n                   contact\n    delay          rounds from onset to the first flag on the faulted client\n\nEvery run records CUSUM with no threshold set; the threshold is applied\nafterwards, so calibration and scoring use exactly the histories the\naggregator wrote.\n\n    python scripts/nvflare_eval.py run --jobs 3   # every missing cell (~2 h)\n    python scripts/nvflare_eval.py score          # tables + results json\n",
   "fault": {
     "site": 3,
     "kind": "blur",
@@ -13,40 +13,52 @@
       "participation": 1.0,
       "threshold": 8.75966739000311,
       "false_alarm_contacts": [
-        0,
-        300
+        1,
+        750
       ],
-      "false_alarm_rate": 0.0,
+      "false_alarm_rate": 0.0013333333333333333,
       "any_client_alarm_rounds": [
-        0,
-        30
+        1,
+        75
       ],
       "clients_without_reference_by_seed": [
+        0,
+        0,
+        0,
         0,
         0
       ],
       "detected": [
-        3,
-        3
+        6,
+        6
       ],
       "detected_wilson95": [
-        0.43849391955098227,
-        1.0
+        0.6096569663469354,
+        0.9999999999999999
       ],
       "delay_rounds": [
         6,
+        6,
+        7,
+        9,
         6,
         7
       ],
       "delay_contacts": [
         7,
         7,
+        8,
+        10,
+        7,
         8
       ],
       "false_localisations_by_seed": [
         0,
         1,
-        0
+        0,
+        0,
+        0,
+        3
       ]
     },
     {
@@ -54,40 +66,52 @@
       "participation": 0.6,
       "threshold": 7.631920848926354,
       "false_alarm_contacts": [
-        0,
-        180
+        12,
+        450
       ],
-      "false_alarm_rate": 0.0,
+      "false_alarm_rate": 0.02666666666666667,
       "any_client_alarm_rounds": [
-        0,
-        30
+        12,
+        75
       ],
       "clients_without_reference_by_seed": [
+        0,
+        0,
+        0,
         0,
         0
       ],
       "detected": [
-        3,
-        3
+        6,
+        6
       ],
       "detected_wilson95": [
-        0.43849391955098227,
-        1.0
+        0.6096569663469354,
+        0.9999999999999999
       ],
       "delay_rounds": [
         6,
         10,
+        10,
+        10,
+        5,
         10
       ],
       "delay_contacts": [
         6,
         5,
-        7
+        7,
+        6,
+        4,
+        4
       ],
       "false_localisations_by_seed": [
         0,
         0,
-        1
+        1,
+        0,
+        0,
+        3
       ]
     },
     {
@@ -96,39 +120,51 @@
       "threshold": 3.7652903128942548,
       "false_alarm_contacts": [
         0,
-        300
+        750
       ],
       "false_alarm_rate": 0.0,
       "any_client_alarm_rounds": [
         0,
-        30
+        75
       ],
       "clients_without_reference_by_seed": [
+        0,
+        0,
+        0,
         0,
         0
       ],
       "detected": [
-        3,
-        3
+        6,
+        6
       ],
       "detected_wilson95": [
-        0.43849391955098227,
-        1.0
+        0.6096569663469354,
+        0.9999999999999999
       ],
       "delay_rounds": [
         5,
         9,
-        4
+        4,
+        5,
+        6,
+        7
       ],
       "delay_contacts": [
         6,
         10,
-        5
+        5,
+        6,
+        7,
+        8
       ],
       "false_localisations_by_seed": [
         1,
         0,
-        0
+        0,
+        1,
+        0,
+        1
       ]
     },
     {
@@ -137,33 +173,45 @@
       "threshold": 6.623401952766226,
       "false_alarm_contacts": [
         0,
-        180
+        450
       ],
       "false_alarm_rate": 0.0,
       "any_client_alarm_rounds": [
         0,
-        30
+        75
       ],
       "clients_without_reference_by_seed": [
+        0,
+        0,
+        0,
         0,
         0
       ],
       "detected": [
-        1,
-        3
+        4,
+        6
       ],
       "detected_wilson95": [
-        0.0614903152761605,
-        0.7923450448735121
+        0.29998832134152864,
+        0.9032306674407831
       ],
       "delay_rounds": [
-        8
+        8,
+        6,
+        8,
+        9
       ],
       "delay_contacts": [
-        3
+        3,
+        5,
+        5,
+        4
       ],
       "false_localisations_by_seed": [
         0,
+        0,
+        0,
+        1,
         0,
         0
       ]
@@ -173,39 +221,51 @@
       "participation": 1.0,
       "threshold": 0.7073947269285659,
       "false_alarm_contacts": [
-        3,
-        300
+        5,
+        750
       ],
-      "false_alarm_rate": 0.01,
+      "false_alarm_rate": 0.006666666666666667,
       "any_client_alarm_rounds": [
-        3,
-        30
+        5,
+        75
       ],
       "clients_without_reference_by_seed": [
+        0,
+        0,
+        0,
         0,
         0
       ],
       "detected": [
-        3,
-        3
+        6,
+        6
       ],
       "detected_wilson95": [
-        0.43849391955098227,
-        1.0
+        0.6096569663469354,
+        0.9999999999999999
       ],
       "delay_rounds": [
         6,
         1,
-        4
+        4,
+        0,
+        5,
+        3
       ],
       "delay_contacts": [
         7,
         2,
-        5
+        5,
+        1,
+        6,
+        4
       ],
       "false_localisations_by_seed": [
         0,
         1,
+        0,
+        1,
+        2,
         0
       ]
     },
@@ -215,28 +275,38 @@
       "threshold": 6.544562945524936,
       "false_alarm_contacts": [
         0,
-        180
+        450
       ],
       "false_alarm_rate": 0.0,
       "any_client_alarm_rounds": [
         0,
-        30
+        75
       ],
       "clients_without_reference_by_seed": [
+        0,
+        0,
+        0,
         0,
         0
       ],
       "detected": [
-        0,
-        3
+        1,
+        6
       ],
       "detected_wilson95": [
-        0.0,
-        0.5615060804490177
+        0.03005258587173032,
+        0.563509436563646
       ],
-      "delay_rounds": [],
-      "delay_contacts": [],
+      "delay_rounds": [
+        5
+      ],
+      "delay_contacts": [
+        2
+      ],
       "false_localisations_by_seed": [
+        0,
+        0,
+        0,
         0,
         0,
         0

@@ -45,9 +45,9 @@ from seeds, runs on a laptop CPU, ships as a container (`Dockerfile`).
   drift was flagged on the right node seven rounds after onset, 1,000 bytes per node per round,
   and quarantined from aggregation. One run per condition; see "Integration: the layer inside Flower".
 - The same layer runs as an NVIDIA FLARE aggregator (`examples/nvflare/`). With every site
-  reporting, a slow blur was caught in every seed at every heterogeneity level, one to nine
+  reporting, a slow blur was caught in all six seeds at every heterogeneity level, zero to nine
   rounds after onset. With six of ten sites sampled per round it holds near-IID and degrades
-  under skew (1 of 3 seeds moderate, 0 of 3 severe); the cause is measured in the example README.
+  under skew (4 of 6 seeds moderate, 1 of 6 severe); the cause is measured in the example README.
 - Where it fails: gain drift; severe heterogeneity, where detection depends on which node is
   faulted; intervals from three seeds.
 
@@ -135,7 +135,7 @@ Three properties follow from that design, and each maps to a real constraint:
 | 4. Pd / FAR / time-to-detection curves | `metrics` | ✅ **done** (3 seeds; intervals are wide) |
 | 5. Second modality: underwater acoustics | `acoustic` | ✅ **done** (3 seeds) |
 | 6. Framework integration: Flower | `integrations/flower` | ✅ **done** (demonstration, one run per condition) |
-| 7. Framework integration: NVIDIA FLARE | `integrations/nvflare` | ✅ **done** (grid across heterogeneity and partial participation, 3 seeds) |
+| 7. Framework integration: NVIDIA FLARE | `integrations/nvflare` | ✅ **done** (grid across heterogeneity and partial participation, 6 seeds) |
 
 ## Why there is no Flower or Ray
 
@@ -642,7 +642,7 @@ fleet is not flagged by the one-sided statistic).
 `FLModel.meta`, the detector history stays on the server, and client exclusion is off by default.
 `examples/nvflare/` is a runnable FedAvg job in NVFlare's own example layout, and its README holds
 the detection-delay and false-alarm results across heterogeneity and partial participation
-(36 simulator runs, `scripts/nvflare_eval.py`).
+(72 simulator runs, `scripts/nvflare_eval.py`).
 
 ## Usage
 

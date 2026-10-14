@@ -6,11 +6,11 @@ in the NVFlare simulator over a grid and scores the aggregator's recorded
 histories with the stage-4 protocol from the README:
 
     cells          alpha in {100, 0.5, 0.1} x participation in {1.0, 0.6}
-    per cell       healthy train seeds 0, 1, 2, and a blur fault (1.5 px,
-                   site-3, onset round 15, ten-round ramp) on seeds 0, 1, 2
+    per cell       healthy train seeds 0-5, and a blur fault (1.5 px,
+                   site-3, onset round 15, ten-round ramp) on seeds 0-5
     threshold      CUSUM healthy maximum after the reference epoch, seed 0,
                    per cell; it never sees a fault
-    false alarms   counted on held-out healthy seeds 1 and 2, per client
+    false alarms   counted on held-out healthy seeds 1-5, per client
                    contact
     delay          rounds from onset to the first flag on the faulted client
 
@@ -18,7 +18,7 @@ Every run records CUSUM with no threshold set; the threshold is applied
 afterwards, so calibration and scoring use exactly the histories the
 aggregator wrote.
 
-    python scripts/nvflare_eval.py run --jobs 3   # every missing cell (~1 h)
+    python scripts/nvflare_eval.py run --jobs 3   # every missing cell (~2 h)
     python scripts/nvflare_eval.py score          # tables + results json
 """
 
@@ -41,7 +41,7 @@ SUMMARY = REPO / "results" / "nvflare_eval.json"
 N_CLIENTS, ROUNDS, REFERENCE = 10, 30, (5, 15)
 ALPHAS = (100.0, 0.5, 0.1)
 PARTICIPATION = (1.0, 0.6)
-SEEDS = (0, 1, 2)
+SEEDS = (0, 1, 2, 3, 4, 5)
 FAULT = {"site": 3, "kind": "blur", "severity": 1.5, "onset": 15, "ramp": 10}
 
 

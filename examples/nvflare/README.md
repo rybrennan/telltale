@@ -60,48 +60,59 @@ sites sampled each round) to `--history_path`, default `/tmp/nvflare/telltale/hi
 
 ## Results
 
-`scripts/nvflare_eval.py`, 36 simulator runs (about 50 minutes, three at a time on one
-laptop CPU). 10 sites, 30 rounds, Fashion-MNIST, a 50-probe battery. Fault: site-3's images
-blur, ramping to 1.5 px over ten rounds from round 15. Thresholds are the CUSUM healthy
-maximum after the reference epoch (rounds 5-14) on healthy seed 0, per cell, and never see a
-fault. False alarms are counted on held-out healthy seeds 1 and 2, per client contact. Three
-fault seeds per cell, so detection is "caught in every seed tried," with a Wilson 95%
-interval, not a probability. Summary: `results/nvflare_eval.json`.
+`scripts/nvflare_eval.py`, 72 simulator runs on one laptop CPU. 10 sites, 30 rounds,
+Fashion-MNIST, a 50-probe battery. Fault: site-3's images blur, ramping to 1.5 px over ten
+rounds from round 15. Per cell, the threshold is the CUSUM healthy maximum after the
+reference epoch (rounds 5-14) on healthy seed 0, and never sees a fault. False alarms are
+counted on held-out healthy seeds 1-5, per client contact. Detection is over six separate
+fault seeds, reported as "caught in k of 6 seeds" with a Wilson 95% interval, not as a
+probability. Summary: `results/nvflare_eval.json`.
 
-| Label skew (alpha) | Sites sampled per round | Threshold | False alarms, held-out contacts | Blur caught | Rounds from onset to flag (client contacts) |
+| Label skew (alpha) | Sites sampled per round | Threshold | False alarms, held-out contacts | Blur caught | Rounds from onset to flag |
 | --- | --- | --- | --- | --- | --- |
-| 100 (near-IID) | 10 of 10 | 8.76 | 0 / 300 | 3 / 3 [0.44, 1.00] | 6, 6, 7 (7, 7, 8) |
-| 100 (near-IID) | 6 of 10 | 7.63 | 0 / 180 | 3 / 3 [0.44, 1.00] | 6, 10, 10 (6, 5, 7) |
-| 0.5 (moderate) | 10 of 10 | 3.77 | 0 / 300 | 3 / 3 [0.44, 1.00] | 5, 9, 4 (6, 10, 5) |
-| 0.5 (moderate) | 6 of 10 | 6.62 | 0 / 180 | 1 / 3 [0.06, 0.79] | 8 (3) |
-| 0.1 (severe) | 10 of 10 | 0.71 | 3 / 300 (1.0%) | 3 / 3 [0.44, 1.00] | 6, 1, 4 (7, 2, 5) |
-| 0.1 (severe) | 6 of 10 | 6.54 | 0 / 180 | 0 / 3 [0.00, 0.56] | none |
+| 100 (near-IID) | 10 of 10 | 8.76 | 1 / 750 (0.1%) | 6 / 6 [0.61, 1.00] | 6, 6, 7, 9, 6, 7 |
+| 100 (near-IID) | 6 of 10 | 7.63 | 12 / 450 (2.7%) | 6 / 6 [0.61, 1.00] | 6, 10, 10, 10, 5, 10 |
+| 0.5 (moderate) | 10 of 10 | 3.77 | 0 / 750 (0.0%) | 6 / 6 [0.61, 1.00] | 5, 9, 4, 5, 6, 7 |
+| 0.5 (moderate) | 6 of 10 | 6.62 | 0 / 450 (0.0%) | 4 / 6 [0.30, 0.90] | 8, 6, 8, 9 |
+| 0.1 (severe) | 10 of 10 | 0.71 | 5 / 750 (0.7%) | 6 / 6 [0.61, 1.00] | 6, 1, 4, 0, 5, 3 |
+| 0.1 (severe) | 6 of 10 | 6.54 | 0 / 450 (0.0%) | 1 / 6 [0.03, 0.56] | 5 |
 
-With every site reporting, the slow blur is caught in every seed at every heterogeneity
-level, one to nine rounds after onset (the one-round case is discussed below), with at most
-one healthy site also flagged in a run.
-This matches the in-process harness (CUSUM, blur 1.5 px: caught in 3 of 3 seeds at every
-alpha). The one-round detection at alpha 0.1 is in the cell whose threshold is lowest; at a
-1% per-contact false-alarm rate, the chance of a false flag on that one site somewhere in the
-fifteen post-onset rounds is about 14%, so it is reported, not leaned on. Its CUSUM kept
-rising, from 1.9 to 19.2 over the next eight rounds.
+**Every site reporting.** The slow blur is caught in all six seeds at every heterogeneity
+level, with at most 0.7% false alarms per held-out contact. This matches the in-process
+harness (CUSUM, blur 1.5 px: caught in every seed at every alpha). Delays run zero to nine
+rounds; the zero- and one-round flags are both in the severe-skew cell, whose threshold is the
+lowest. At its 0.7% false-alarm rate, the chance of a false flag on that one site somewhere in
+the fifteen post-onset rounds is about 10%, so those two are reported, not leaned on.
 
-**Partial participation costs detection under label skew, and the cost is measured, not
-assumed.** Near-IID it costs nothing. At moderate and severe skew the same fault is caught in
-1 and 0 of 3 seeds. Two things change when FedAvg samples 6 of 10 sites each round: each site
-has as few as 3 contacts in the reference epoch instead of 10, and a site's leave-one-out
-consensus is built from a different set of peers every round. The evidence points at the
-second. The healthy reference-epoch coefficient of variation of the level goes from 0.185
-to 0.231 at alpha 0.5 and from 0.081 to 0.153 at alpha 0.1, the per-cell thresholds rise
-with it (3.77 to 6.62, 0.71 to 6.54), and a 1.5 px blur no longer clears them. Pooling the
-reference spread across sites, the harness's remedy for a starved reference, was tried on the
-recorded histories afterwards and did not recover it (moderate skew: 1 of 3), so the sparse
-reference alone is not the limit. Building the consensus from a fixed peer set, or scoring a
-site against its own history only, are the next things to measure.
+**Six of ten sites sampled per round.** Near-IID, detection holds but false alarms rise to
+2.7%. Under label skew the same fault is caught in 4 of 6 seeds at alpha 0.5 and 1 of 6 at
+alpha 0.1. Two things change when FedAvg samples six sites a round: each site has as few as 3
+contacts in the reference epoch instead of 10, and its leave-one-out consensus is built from
+a different set of peers every round. The evidence points at the second. The median
+coefficient of variation of a healthy site's level over the reference epoch goes from 0.173
+to 0.207 at alpha 0.5 and from 0.076 to 0.151 at alpha 0.1 (six healthy seeds); the per-cell
+thresholds rise with it (3.77 to 6.62, 0.71 to 6.54), and a 1.5 px blur no longer clears them
+reliably. Near-IID the variation does not rise (0.428 to 0.367).
+
+**Two alternatives were scored on the recorded histories, under the same protocol.**
+
+| Statistic | alpha 100, 6 of 10 | alpha 0.5, 6 of 10 | alpha 0.1, 6 of 10 | Cost elsewhere |
+| --- | --- | --- | --- | --- |
+| Leave-one-out consensus (shipped) | 6/6, 2.7% false alarms | 4/6, 0.0% | 1/6, 0.0% | none |
+| Pooled reference spread | 6/6, 0.7% | 4/6, 0.0% | 1/6, 0.0% | none |
+| Fixed peer set (consensus frozen at the reference epoch) | 6/6, 8.0% | 6/6, 0.0% | 3/6, 2.2% | near-IID full participation 5/6; severe full participation 1.2% false alarms |
+
+Pooling the reference spread across sites, the harness's remedy for a starved reference, does
+not recover detection, so the sparse reference alone is not the limit. Comparing each site
+with a consensus frozen at the reference epoch recovers detection at moderate skew and half of it at severe skew,
+but it was designed after the first three seeds showed the failure and it triples the
+near-IID false-alarm rate under partial participation. It is not adopted; a statistic that
+keeps the frozen consensus's detection without its false alarms is the next thing to measure.
 
 Sampling in these runs is NVFlare's own: FedAvg draws a fresh random subset each round and
 does not take a seed, so the 60% cells are not bitwise reproducible. The sites sampled each
-round are recorded in every history file.
+round are recorded in every history file. One of the 72 simulations stalled (a site lost its
+connection to the simulator's server at round 3) and was rerun.
 
 ## What this does not do
 

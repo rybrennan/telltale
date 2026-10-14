@@ -9,12 +9,13 @@ Stages were tagged in the private working repository. This public repository is 
   Built on the released NVFlare 2.7.3 and checked on 2.9.0. Design from NVIDIA/NVFlare#5398.
 - `examples/nvflare/`: a `FedAvgRecipe` job and a Client API training script, laid out like
   NVFlare's own examples.
-- `scripts/nvflare_eval.py`: 36 simulator runs. Every site reporting: blur caught in 3 of 3 seeds
-  at every heterogeneity level, 1 to 9 rounds after onset, 0 to 1% held-out false alarms.
-  Six of ten sites sampled per round: unchanged near-IID, 1 of 3 at moderate skew, 0 of 3 at
-  severe skew: a rotating peer set raises the healthy level's variability by a quarter at
-  moderate skew and nearly doubles it at severe skew, and the calibrated threshold rises past
-  the fault.
+- `scripts/nvflare_eval.py`: 72 simulator runs (six seeds per cell). Every site reporting: blur
+  caught in 6 of 6 seeds at every heterogeneity level, 0 to 9 rounds after onset, at most 0.7%
+  held-out false alarms. Six of ten sites sampled per round: 6 of 6 near-IID with false alarms
+  at 2.7%, 4 of 6 at moderate skew, 1 of 6 at severe skew, because the rotating peer set makes
+  a healthy site's divergence more variable under skew. Pooling the reference spread did not
+  recover it; a consensus frozen at the reference epoch did, at the cost of false alarms, and
+  is not adopted.
 - The probe-score wire format moves to `telltale/integrations/wire.py`, shared by both adapters.
   `pyproject.toml` makes the package installable (`pip install -e ".[nvflare]"`).
 - Eleven integration tests, in the repository's Google style and ruff-clean. 113 tests in
