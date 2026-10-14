@@ -11,5 +11,19 @@ jobs:
       - run: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
       - run: pip install numpy scipy matplotlib pytest ruff
       - run: pip install "nvflare>=2.7.3"
+      - run: pip install -e .
       - run: ruff check .
       - run: python -m pytest -q
+      - name: NVFlare example, 4 sites x 4 rounds in the simulator
+        working-directory: examples/nvflare
+        run: |
+          python job.py --n_clients 4 --num_rounds 4 --reference_start 1 --reference_stop 3 \
+            --participation 0.75 --history_path /tmp/telltale/smoke.json --name ci-smoke
+          python - <<'PY'
+          import json
+          h = json.load(open("/tmp/telltale/smoke.json"))
+          assert len(h["participants"]) == 4, h["participants"]
+          assert h["payload_bytes_median"] == 1000, h["payload_bytes_median"]
+          assert not h["fingerprint_mismatches"] and not h["missing_scores"]
+          print("simulator run ok:", {r: len(v) for r, v in h["participants"].items()})
+          PY
