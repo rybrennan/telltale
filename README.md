@@ -60,6 +60,22 @@ This public repository is a single squashed release (`v0.6.0`); the per-stage ta
 commit history are kept in a private working repository. Design decisions and the alternatives
 rejected are in `docs/`. Provenance of every dataset and method is in `CITATION.md`. Licence: MIT.
 
+## Where to look
+
+| If you want | Go to |
+|---|---|
+| The five results that matter, as figures | [The evidence in five figures](#the-evidence-in-five-figures) |
+| What it does and does not cover | [Scope](#scope) · [What this does and does not claim](#what-this-does-and-does-not-claim) |
+| How the detector works | [Approach](#approach) · [The probe battery](#the-probe-battery) |
+| Detection rates and false alarms, with intervals | [Stage 4: the grid](#stage-4-the-grid) · [False-alarm rate on held-out healthy seeds](#false-alarm-rate-on-held-out-healthy-seeds) |
+| The second modality (underwater acoustics) | [Stage 5](#stage-5-the-same-instrument-on-underwater-acoustics) |
+| Intermittent contact (submarines) | [The submarine arm](#intermittent-contact-the-submarine-arm) |
+| Running inside Flower | [Integration: Flower](#integration-the-layer-inside-flower) |
+| Running inside NVIDIA FLARE, with 72 runs | [Integration: NVIDIA FLARE](#integration-the-layer-inside-nvidia-flare) · [`examples/nvflare`](examples/nvflare/README.md#results) |
+| Install and run | [Usage](#usage) · [Reproducibility](#reproducibility) |
+| What it cannot do | [Known constraints](#known-constraints) |
+| What changed, release by release | [CHANGELOG.md](CHANGELOG.md) |
+
 ## The evidence in five figures
 
 Each figure is generated from the tracked `results/*.json` by `scripts/make_figures.py`, and every
