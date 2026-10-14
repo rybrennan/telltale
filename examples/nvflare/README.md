@@ -114,6 +114,15 @@ does not take a seed, so the 60% cells are not bitwise reproducible. The sites s
 round are recorded in every history file. One of the 72 simulations stalled (a site lost its
 connection to the simulator's server at round 3) and was rerun.
 
+## Validation performed
+
+- **Code tested:** telltale `6b9e23f` (the commit the results above were scored at; later commits touch only CI and documentation).
+- **NVFlare:** 2.7.3 for the 72-run evaluation; the example re-run from a fresh clone on 2.9.0 (4 sites, 4 rounds, 3 of 4 sampled per round).
+- **Environment:** macOS 15.6 (Apple M4 Pro), Python 3.12, CPU only, one machine. The same 4-site run also executes in the simulator on Ubuntu in this repository's CI on every push.
+- **Commands:** `python job.py` with the defaults for one healthy run; `python scripts/nvflare_eval.py run --jobs 3` then `score` for the table above.
+- **Observed result:** the table above; per-run detector histories (every round's probe scores, CUSUM path, flags, sampled sites) are written by the aggregator, and the scored summary is `results/nvflare_eval.json`.
+- **Limitations:** simulator only, one fault type (blur), one dataset (Fashion-MNIST), three heterogeneity levels, six seeds per cell. Detection degrades under partial participation with label skew, as measured above. FedAvg's client sampling is unseeded in NVFlare, so the partial-participation cells are not bitwise reproducible.
+
 ## What this does not do
 
 - The server never runs a probe forward pass and never sees raw data; it sees only the
