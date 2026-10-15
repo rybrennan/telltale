@@ -13,6 +13,14 @@ the calibration run is zero by construction and is NOT reported as a FAR; a
 FAR needs healthy runs on other train seeds, which the grid must supply.
 
     python scripts/score_faults.py
+
+Runs that carry a .updates.npz sidecar (run_grid.py --update-stats) are also
+scored on four update-space baselines (telltale/baselines.py): FedRR's
+residual-rank CUSUM and its update-norm benchmark, and the update norm and
+FedCE's leave-one-out update distance under telltale's own CUSUM. A statistic
+is scored only where every run involved has it. FedRR is also scored at its
+own control limit (in-control ARL 30, as in the paper), next to the
+healthy-max threshold every other statistic uses.
 """
 
 from __future__ import annotations
@@ -26,6 +34,12 @@ import numpy as np
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
+from telltale.baselines import (  # noqa: E402
+    FIT_ROUNDS,
+    fedrr_cusum,
+    fedrr_threshold,
+    local_steps,
+)
 from telltale.contact import ContactSchedule  # noqa: E402
 from telltale.detect import (  # noqa: E402
     cusum,
@@ -36,6 +50,7 @@ from telltale.detect import (  # noqa: E402
     self_referenced_level,
 )
 from telltale.metrics import (  # noqa: E402
+    Threshold,
     calibrate_by_class,
     flags_by_class,
     score_flags,
@@ -62,16 +77,80 @@ def platform_classes(d: dict) -> np.ndarray:
     return np.array(["sub" if k in subs else "ship" for k in range(K)])
 
 
-def statistics(probs: np.ndarray, classes: np.ndarray) -> dict[str, np.ndarray]:
+FEDRR_START = FIT_ROUNDS[-1] + 1
+"""First round FedRR monitors: the one after its start-up fit."""
+FEDRR_D = 0.5
+"""FedRR's CUSUM reference value; the middle of the paper's 0.4 to 0.6."""
+FEDRR_ARL0 = 30
+"""FedRR's in-control average run length, as in the paper's experiments."""
+
+
+def statistics(
+    probs: np.ndarray | dict,
+    classes: np.ndarray,
+    updates: dict | None = None,
+    seed: int = 0,
+    steps: np.ndarray | None = None,
+) -> dict[str, np.ndarray]:
     """Compute every scored statistic as a [round, node] array.
 
     Args:
         probs: Probe scores, shape [round, node, probe, class].
         classes: Platform class per node, from platform_classes.
+        updates: The run's .updates.npz contents, or None.
+        seed: The run's train seed; seeds FedRR's rank jitter.
+        steps: (clients,) local SGD steps per round, for the step-normalised
+            FedRR variants; omitted when None.
 
     Returns:
-        Map from statistic name (the names in STATS) to its series.
+        Map from statistic name (the names in STATS) to its series. The
+        update-space baselines are present only when `updates` is given.
     """
+    base = {}
+    if updates is not None:
+        base = {
+            "update_norm_cusum": cusum(
+                updates["norm"], REFERENCE, pool=classes
+            ),
+            "update_loo_cusum": cusum(
+                updates["loo_dist"], REFERENCE, pool=classes
+            ),
+            "fedrr": fedrr_cusum(
+                updates["resid"], FEDRR_START, FEDRR_D, seed=seed
+            ),
+            "fedrr_norm": fedrr_cusum(
+                updates["norm"], FEDRR_START, FEDRR_D, seed=seed
+            ),
+        }
+        if steps is not None:
+            base["fedrr_steps"] = fedrr_cusum(
+                updates["resid"] / steps, FEDRR_START, FEDRR_D, seed=seed
+            )
+            base["fedrr_norm_steps"] = fedrr_cusum(
+                updates["norm"] / steps, FEDRR_START, FEDRR_D, seed=seed
+            )
+    return base | probe_statistics(probs, classes)
+
+
+def probe_statistics(
+    probs: np.ndarray | dict, classes: np.ndarray
+) -> dict[str, np.ndarray]:
+    """The probe-score statistics of one run, each a [round, node] array.
+
+    Every one depends only on the run itself, so a machine without the
+    probe array can score a run from these (scripts/export_stats.py writes
+    them to <stem>.stats.npz).
+
+    Args:
+        probs: Probe scores [round, node, probe, class], or a dict of
+            already computed statistics, returned unchanged.
+        classes: Platform class per node.
+
+    Returns:
+        Map from probe statistic name to its series.
+    """
+    if isinstance(probs, dict):
+        return probs
     lv = level_series(probs)
     return {
         "level": lv["level"],
@@ -88,11 +167,37 @@ def statistics(probs: np.ndarray, classes: np.ndarray) -> dict[str, np.ndarray]:
     }
 
 
-def load(stem: str) -> tuple[dict, np.ndarray]:
-    """Read a result's JSON and its probe-score array from results/."""
-    return json.loads((RESULTS / f"{stem}.json").read_text()), np.load(
-        RESULTS / f"{stem}.npz"
-    )["probs"]
+def load(stem: str) -> tuple[dict, np.ndarray | dict, dict | None]:
+    """Read a result's JSON, probe scores and update sidecar from results/.
+
+    Without the probe array, the precomputed statistics in <stem>.stats.npz
+    are returned in its place.
+    """
+    side = RESULTS / f"{stem}.updates.npz"
+    updates = None
+    if side.exists():
+        with np.load(side) as z:
+            updates = {k: z[k] for k in z.files}
+    raw = RESULTS / f"{stem}.npz"
+    if raw.exists():
+        probs = np.load(raw)["probs"]
+    else:
+        with np.load(RESULTS / f"{stem}.stats.npz") as z:
+            probs = {k: z[k] for k in z.files}
+    return json.loads((RESULTS / f"{stem}.json").read_text()), probs, updates
+
+
+def scored(d: dict, probs: np.ndarray, updates: dict | None) -> dict:
+    """Every statistic for one run, seeded by its train seed."""
+    cfg = d["config"]
+    steps = local_steps(
+        d["partition_summary"]["client_sizes"],
+        cfg["batch_size"],
+        cfg["local_epochs"],
+    )
+    return statistics(
+        probs, platform_classes(d), updates, cfg["train_seed"], steps
+    )
 
 
 def family(d: dict) -> tuple:
@@ -131,6 +236,12 @@ STATS = (
     "level_own_z",
     "level_cusum",
     "level_cusum2",
+    "update_norm_cusum",
+    "update_loo_cusum",
+    "fedrr",
+    "fedrr_norm",
+    "fedrr_steps",
+    "fedrr_norm_steps",
 )
 QUANTILES = (None, 0.99, 0.95, 0.9)
 """Threshold sweep: healthy max, then quantiles of the healthy node-rounds."""
@@ -140,15 +251,15 @@ def main() -> int:
     """Print the false-alarm, detection and sweep tables; write scores.json."""
     families: dict[tuple, dict[int, tuple[dict, dict]]] = {}
     for f in sorted(RESULTS.glob("probes_*.json")):
-        d, probs = load(f.stem)
+        d, probs, upd = load(f.stem)
         families.setdefault(family(d), {})[d["config"]["train_seed"]] = (
             d,
-            statistics(probs, platform_classes(d)),
+            scored(d, probs, upd),
         )
     faults = []
     for f in sorted(RESULTS.glob("fault_*.json")):
-        d, probs = load(f.stem)
-        faults.append((d, statistics(probs, platform_classes(d))))
+        d, probs, upd = load(f.stem)
+        faults.append((d, scored(d, probs, upd)))
 
     # ── false-alarm rate on held-out healthy seeds ──
     print(
@@ -180,6 +291,8 @@ def main() -> int:
             continue
         classes = platform_classes(calib_d)
         for name in STATS:
+            if name not in calib_stats or any(name not in s for _, s in held):
+                continue
             thr = calibrate_by_class(calib_stats[name], classes, name, BURN_IN)
             node_rounds = []
             any_alarm = []
@@ -254,6 +367,8 @@ def main() -> int:
         )
         classes = platform_classes(d)
         for name in STATS:
+            if name not in stats or name not in hstats:
+                continue
             thr = calibrate_by_class(hstats[name], classes, name, BURN_IN)
             fl = flags_by_class(stats[name], thr, classes)
             out = score_flags(
@@ -410,6 +525,12 @@ def main() -> int:
             )
         ]
         for name in STATS:
+            if (
+                name not in calib_stats
+                or any(name not in runs[sd][1] for sd in seeds[1:])
+                or any(name not in st for _, st in fam_faults)
+            ):
+                continue
             for q in QUANTILES:
                 thr = calibrate_by_class(
                     calib_stats[name], classes, name, BURN_IN, q
@@ -464,9 +585,94 @@ def main() -> int:
                     f"{'-' if ttd is None else f'{ttd:.0f}'} | {fl_mean:.1f} |"
                 )
 
+    native_fedrr(families, faults, summary)
     (RESULTS / "scores.json").write_text(json.dumps(summary, indent=1))
     print("\nwrote results/scores.json")
     return 0
+
+
+def native_fedrr(
+    families: dict, faults: list[tuple[dict, dict]], summary: dict
+) -> None:
+    """Score FedRR at its own control limit, as its paper would run it.
+
+    H is the limit that gives an in-control ARL of FEDRR_ARL0 under random
+    ranks. That guarantee assumes exchangeable (IID) clients; the false-alarm
+    rate on held-out healthy seeds shows what it is worth under heterogeneity.
+    Every seed is held out here, since nothing is calibrated on the runs.
+    """
+    every_round = [
+        (fam, runs)
+        for fam, runs in families.items()
+        if not next(iter(runs.values()))[0].get("contact")
+        and all("fedrr_steps" in st for _, st in runs.values())
+    ]
+    if not every_round:
+        return
+    k = next(iter(every_round[0][1].values()))[0]["config"]["n_clients"]
+    h = fedrr_threshold(FEDRR_ARL0, k, FEDRR_D)
+    print(
+        f"\n## FedRR at its own control limit (ARL0 {FEDRR_ARL0}, d "
+        f"{FEDRR_D}, K {k}: H = {h:.2f}); every seed held out\n"
+    )
+    print(
+        "| dataset | alpha | stat | healthy runs | node-round FAR | "
+        "rounds with any alarm | runs with any alarm | fault runs | "
+        "detected | false loc per run |"
+    )
+    print("|---|---|---|---|---|---|---|---|---|---|")
+    summary["fedrr_native"] = {"h": h, "arl0": FEDRR_ARL0, "rows": []}
+    for fam, runs in sorted(
+        every_round,
+        key=lambda kv: next(iter(kv[1].values()))[0]["config"][
+            "dirichlet_alpha"
+        ],
+    ):
+        d0 = next(iter(runs.values()))[0]
+        classes = platform_classes(d0)
+        for name in ("fedrr", "fedrr_norm", "fedrr_steps", "fedrr_norm_steps"):
+            thr = {
+                c: Threshold(name, h, FEDRR_START, f"arl0:{FEDRR_ARL0}")
+                for c in np.unique(classes)
+            }
+            fl = [
+                flags_by_class(st[name], thr, classes)[FEDRR_START:]
+                for _, st in runs.values()
+            ]
+            outs = [
+                score_flags(
+                    flags_by_class(st[name], thr, classes),
+                    FEDRR_START,
+                    d["fault"]["node"],
+                    d["fault"]["onset"],
+                )
+                for d, st in faults
+                if family(d) == fam and name in st
+            ]
+            row = {
+                "dataset": d0["config"]["dataset"],
+                "alpha": d0["config"]["dirichlet_alpha"],
+                "stat": name,
+                "healthy_runs": len(fl),
+                "node_round_far": float(np.mean([f.mean() for f in fl])),
+                "any_alarm": float(np.mean([f.any(axis=1).mean() for f in fl])),
+                "runs_any_alarm": float(np.mean([f.any() for f in fl])),
+                "fault_runs": len(outs),
+                "detected": sum(o.detected for o in outs),
+                "false_loc": float(
+                    np.mean([o.false_localisations for o in outs])
+                )
+                if outs
+                else float("nan"),
+            }
+            summary["fedrr_native"]["rows"].append(row)
+            print(
+                f"| {row['dataset']} | {row['alpha']} | {name} | "
+                f"{row['healthy_runs']} | {row['node_round_far']:.3f} | "
+                f"{row['any_alarm']:.3f} | {row['runs_any_alarm']:.2f} | "
+                f"{row['fault_runs']} | {row['detected']} | "
+                f"{row['false_loc']:.1f} |"
+            )
 
 
 def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
