@@ -646,7 +646,7 @@ fleet accuracy here because this fault barely moved it in the first place; its v
 known-bad contributor out of the shared model, not a number this run can show. All processes ran
 on one host over loopback; this is integration, not tactical deployment. It uses Flower's
 `start_server`/`start_client` compatibility API (deprecated since 1.13 in favour of SuperLink/
-SuperNode); porting to that CLI or to NVIDIA FLARE is Phase 2 work. Tests:
+SuperNode); porting to that CLI is Phase 2 work. Tests:
 `tests/test_flower_integration.py`, including one that pins the known limit (drift toward the
 fleet is not flagged by the one-sided statistic).
 
@@ -659,6 +659,12 @@ fleet is not flagged by the one-sided statistic).
 `examples/nvflare/` is a runnable FedAvg job in NVFlare's own example layout, and its README holds
 the detection-delay and false-alarm results across heterogeneity and partial participation
 (72 simulator runs, `scripts/nvflare_eval.py`).
+
+The example is listed in NVIDIA FLARE's
+[research README](https://github.com/NVIDIA/NVFlare/tree/main/research#published-and-reference-implementations)
+as an externally maintained project
+([NVIDIA/NVFlare#5426](https://github.com/NVIDIA/NVFlare/pull/5426)). It is maintained here, not
+by the NVFlare team.
 
 ## Usage
 

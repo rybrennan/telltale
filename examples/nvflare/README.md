@@ -8,6 +8,10 @@ from the leave-one-out consensus, accumulated with a CUSUM against the site's ow
 reference epoch. A site whose data degrades slowly, inside nominal bounds, is flagged
 while the fleet accuracy shows nothing.
 
+NVIDIA FLARE lists this example in its
+[research README](https://github.com/NVIDIA/NVFlare/tree/main/research#published-and-reference-implementations)
+as externally maintained ([NVIDIA/NVFlare#5426](https://github.com/NVIDIA/NVFlare/pull/5426)).
+
 This follows the design discussed in [NVIDIA/NVFlare#5398](https://github.com/NVIDIA/NVFlare/issues/5398):
 
 | Piece | Where |
