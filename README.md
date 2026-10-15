@@ -1,5 +1,9 @@
 # telltale
 
+[![tests](https://github.com/rybrennan/telltale/actions/workflows/tests.yml/badge.svg)](https://github.com/rybrennan/telltale/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![NVIDIA FLARE: research listing](https://img.shields.io/badge/NVIDIA_FLARE-research_listing-lightgrey)](https://github.com/NVIDIA/NVFlare/tree/main/research#published-and-reference-implementations)
+
 **A measurement harness for federated aggregation integrity.**
 
 In a federated learning system, each node trains locally on its own sensor feeds and returns a
