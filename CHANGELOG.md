@@ -2,6 +2,12 @@
 
 Stages were tagged in the private working repository. This public repository is a single squashed release (`v0.6.0`); each entry below states what that stage claimed and what it did not.
 
+## Unreleased: correction to the stage-4 claim on slow bias
+- Three sentences in the README said slow bias drift is detected under severe skew. The
+  stage-4 grid shows bias 0.5 at alpha 0.1 caught in 0 of 3 seeds (`results/scores.json`;
+  the README's own table and Figure 1 text already said so). Corrected to: blur under
+  moderate and severe skew, bias under moderate skew only. No result changed.
+
 ## v0.7.0 (2026-10-13): the layer as an NVIDIA FLARE aggregator
 - `telltale.integrations.nvflare.IntegrityAggregator`, an NVFlare `ModelAggregator`: sites return
   probe scores (float16, 1,000 bytes) in `FLModel.meta`; the aggregator keeps the detector history

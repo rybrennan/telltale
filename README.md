@@ -40,8 +40,10 @@ from seeds, runs on a laptop CPU, ships as a container (`Dockerfile`).
   ninety injected faults. On real hydrophone recordings it is too noisy to inform either way.
 - Label corruption at 30% or more is detected and localised at every heterogeneity level,
   three to four rounds after onset, in every seed tried.
-- Slow input drift under realistic heterogeneity is caught by a cumulative statistic on the
-  node's own history, four to seven rounds after onset, and by nothing else.
+- Slow blur under moderate and severe heterogeneity, and slow bias under moderate
+  heterogeneity, are caught by a cumulative statistic on the node's own history, four to
+  seven rounds after onset, and by nothing else. Slow bias under severe heterogeneity is
+  missed.
 - The probe payload's useful size is about 1 kB per node per round, 0.12% of the model update.
 - The same ordering by heterogeneity appears on real underwater acoustics (DeepShip), carried
   by the cumulative statistic; the peer-persistence statistic does not transfer.
@@ -434,9 +436,10 @@ Three statements, each with its limit:
    at 30% and 50% corruption, by the persistence statistic, three to four rounds after onset,
    with at most two healthy nodes mis-flagged per run. This is the stage-2 design working as
    designed. Limit: at 10% corruption it drops to 0–0.33 under skew.
-2. **Slow input drift (blur, bias) is detected under moderate and severe skew only by CUSUM**,
-   3 of 3 seeds at blur ≥ 1 px and every bias level, four to seven rounds after onset, where
-   persistence and the cross-node statistics miss. Limit: CUSUM's false localisation on
+2. **Slow input drift is detected under skew only by CUSUM, except bias under severe skew.**
+   Blur ≥ 1 px is caught in 3 of 3 seeds at moderate and severe skew, and bias 0.5 in 3 of 3
+   at moderate skew, four to seven rounds after onset, where persistence and the cross-node
+   statistics miss. Bias 0.5 under severe skew is caught in 0 of 3 (table above). Limit: CUSUM's false localisation on
    *label* faults is severe (8–29 healthy nodes flagged per run) because corrupted labels move
    every node's level once aggregated. CUSUM detects; persistence localises.
 3. **Gain is the failure case.** Under severe skew nothing sees it at any severity; under
@@ -604,7 +607,8 @@ reads a brief.
 
 It claims, with 3 seeds and the intervals that implies: label corruption at 30% or more is
 detected and localised at every heterogeneity level three to four rounds after onset; slow
-blur and bias drift are detected under skew by CUSUM alone, four to seven rounds after onset;
+blur drift is detected under moderate and severe skew, and slow bias drift under moderate skew,
+by CUSUM alone, four to seven rounds after onset; slow bias under severe skew is missed;
 gain drift is not reliably detected; the fleet accuracy metric hid all ninety faults; false
 alarms are 0–1.5% of node-rounds at the healthy-maximum threshold. It does not claim a
 detection probability tighter than the intervals shown, anything about node weight, anything
