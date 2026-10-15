@@ -203,3 +203,20 @@ def test_exported_probe_statistics_score_identically(tmp_path):
     assert direct.keys() == loaded.keys()
     for k in direct:
         np.testing.assert_array_equal(direct[k], loaded[k])
+
+
+def test_grid_plan_filters_by_alpha():
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    from run_grid import plan
+
+    every = plan(seeds=[0])
+    some = plan(seeds=[0], alphas=[0.5, 100.0])
+    assert len(every) == 33 and len(some) == 22
+    assert all(
+        "--alpha" in a and a[a.index("--alpha") + 1] != "0.1" for _, a in some
+    )
+    nodes = plan(extra_nodes=True, seeds=[0, 1, 2], alphas=[0.5])
+    assert len(nodes) == 3 * (1 + 10 + 8)

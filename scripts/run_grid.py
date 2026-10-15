@@ -71,6 +71,7 @@ def plan(
     local_epochs: int = 1,
     tag_prefix: str = "",
     seeds: list[int] = SEEDS,
+    alphas: list[float] | None = None,
 ) -> list[tuple[str, list[str]]]:
     """List every run in the grid.
 
@@ -80,6 +81,7 @@ def plan(
         local_epochs: Local epochs per round, passed through.
         tag_prefix: Prefix that keeps a second modality's files distinct.
         seeds: Train seeds; the lowest calibrates, the rest are held out.
+        alphas: Heterogeneity levels to include; None means all of ALPHAS.
 
     Returns:
         (expected result stem, argv) for every run, healthy run first per
@@ -88,6 +90,8 @@ def plan(
     pcfg = ProbeConfig()
     runs = []
     for alpha, tag0 in ALPHAS.items():
+        if alphas is not None and alpha not in alphas:
+            continue
         tag = tag_prefix + tag0
         for seed in seeds:
             cfg = FedConfig(
@@ -177,6 +181,11 @@ def main() -> int:
         ".updates.npz exists",
     )
     p.add_argument("--jobs", type=int, default=1)
+    p.add_argument(
+        "--alphas",
+        default=None,
+        help="comma-separated heterogeneity levels, e.g. 0.5,100 (default all)",
+    )
     args = p.parse_args()
     seeds = [int(s) for s in args.seeds.split(",")]
 
@@ -186,6 +195,9 @@ def main() -> int:
         local_epochs=args.local_epochs,
         tag_prefix=args.tag_prefix,
         seeds=seeds,
+        alphas=None
+        if args.alphas is None
+        else [float(a) for a in args.alphas.split(",")],
     )
     suffix = ".updates.npz" if args.update_stats else ".json"
     extra = ["--update-stats"] if args.update_stats else []
