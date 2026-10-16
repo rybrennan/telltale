@@ -28,6 +28,14 @@ the inertness test: the monitor must not move a single number.
     python scripts/run_probes.py --alpha 0.1 --tag severe
     python scripts/run_probes.py --alpha 0.5 --kind bias --node 2 \
         --onset 15 --ramp 10 --severity 0.5
+
+With --update-stats an UpdateStatsMonitor also records the update-space
+signals the FedRR and FedCE baselines use, written to <stem>.updates.npz. If
+the run's result files already exist (an earlier run of the same config),
+they are not rewritten: the new probe scores are compared bit for bit with
+the stored ones, the comparison is recorded in the sidecar, and only the
+sidecar is written. Re-running an old seed for its update statistics is
+therefore also a reproducibility check.
 """
 
 from __future__ import annotations
@@ -52,6 +60,7 @@ from telltale import (  # noqa: E402
     run_federated,
     skew_summary,
 )
+from telltale.baselines import UpdateStatsMonitor  # noqa: E402
 from telltale.contact import ContactSchedule  # noqa: E402
 from telltale.detect import (  # noqa: E402
     characterise,
@@ -116,6 +125,11 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1,
         help="submarine nodes report every k rounds",
+    )
+    p.add_argument(
+        "--update-stats",
+        action="store_true",
+        help="also record update-space baseline signals (.updates.npz)",
     )
     return p.parse_args()
 
@@ -197,6 +211,21 @@ def main() -> int:
             flush=True,
         )
 
+    stats = None
+    hook = monitor
+    if args.update_stats:
+        stats = UpdateStatsMonitor(
+            cfg.rounds,
+            cfg.n_clients,
+            ds.n_classes,
+            cfg.init_seed,
+            device=cfg.device,
+        )
+
+        def hook(updates, rnd) -> None:
+            monitor(updates, rnd)
+            stats(updates, rnd)
+
     t0 = time.perf_counter()
     result = run_federated(
         cfg,
@@ -204,7 +233,7 @@ def main() -> int:
         parts,
         partition_summary=summary,
         on_round=report,
-        update_hook=monitor,
+        update_hook=hook,
         fault=fault,
         participation=participation,
     )
@@ -321,6 +350,31 @@ def main() -> int:
         )
     if schedule is not None:
         stem += f"_c{schedule.fingerprint()}"
+    existing = RESULTS / f"{stem}.npz"
+    if stats is not None and existing.exists():
+        stored = np.load(existing)["probs"]
+        match = bool(
+            stored.shape == probs.shape
+            and np.array_equal(stored, probs, equal_nan=True)
+        )
+        np.savez_compressed(
+            RESULTS / f"{stem}.updates.npz",
+            reproduction=np.array("identical" if match else "differ"),
+            **stats.arrays(),
+        )
+        print(
+            f"existing  results/{stem}.* kept; probe scores "
+            f"{'IDENTICAL' if match else 'DIFFER'} to the stored run"
+        )
+        print(f"wrote     results/{stem}.updates.npz  q={stats.q}")
+        return 0 if match else 3
+    if stats is not None:
+        np.savez_compressed(
+            RESULTS / f"{stem}.updates.npz",
+            reproduction=np.array("new"),
+            **stats.arrays(),
+        )
+        print(f"wrote     results/{stem}.updates.npz  q={stats.q}")
     np.savez_compressed(
         RESULTS / f"{stem}.npz",
         probs=probs,

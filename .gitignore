@@ -10,3 +10,6 @@ grid.log
 grid_ds.log
 data
 *.egg-info/
+logs/
+grid6.log
+gridnodes.log
