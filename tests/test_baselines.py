@@ -220,3 +220,22 @@ def test_grid_plan_filters_by_alpha():
     )
     nodes = plan(extra_nodes=True, seeds=[0, 1, 2], alphas=[0.5])
     assert len(nodes) == 3 * (1 + 10 + 8)
+
+
+def test_load_prefers_exported_statistics_over_a_raw_array(
+    tmp_path, monkeypatch
+):
+    """A leftover raw array must not override the published statistics."""
+    import json as _json
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    import score_faults as sf
+
+    monkeypatch.setattr(sf, "RESULTS", tmp_path)
+    (tmp_path / "r.json").write_text(_json.dumps({"config": {}}))
+    np.savez_compressed(tmp_path / "r.npz", probs=np.zeros((2, 2, 1, 2)))
+    np.savez_compressed(tmp_path / "r.stats.npz", level=np.ones((2, 2)))
+    _, probs, _ = sf.load("r")
+    assert isinstance(probs, dict) and probs["level"].sum() == 4

@@ -170,20 +170,23 @@ def probe_statistics(
 def load(stem: str) -> tuple[dict, np.ndarray | dict, dict | None]:
     """Read a result's JSON, probe scores and update sidecar from results/.
 
-    Without the probe array, the precomputed statistics in <stem>.stats.npz
-    are returned in its place.
+    The precomputed statistics in <stem>.stats.npz are used when present;
+    the raw probe array only when they are absent.
     """
     side = RESULTS / f"{stem}.updates.npz"
     updates = None
     if side.exists():
         with np.load(side) as z:
             updates = {k: z[k] for k in z.files}
-    raw = RESULTS / f"{stem}.npz"
-    if raw.exists():
-        probs = np.load(raw)["probs"]
-    else:
-        with np.load(RESULTS / f"{stem}.stats.npz") as z:
+    stats = RESULTS / f"{stem}.stats.npz"
+    if stats.exists():
+        # The exported statistics are the published record. A raw array left
+        # over from another machine's run of the same configuration must not
+        # silently replace them.
+        with np.load(stats) as z:
             probs = {k: z[k] for k in z.files}
+    else:
+        probs = np.load(RESULTS / f"{stem}.npz")["probs"]
     return json.loads((RESULTS / f"{stem}.json").read_text()), probs, updates
 
 
