@@ -262,3 +262,97 @@ def test_false_alarm_rate_ignores_rounds_where_the_statistic_is_undefined():
     assert false_alarm_rate(series, thr) == 0.1
     # 5 live rounds, 1 with an alarm
     assert round_alarm_rate(flagged, series, 10) == 0.2
+
+
+# ── review 4: fingerprints, clipping, FedRR allowance ─────────────────────────
+
+
+def test_existing_fingerprints_are_unchanged_by_the_clip_field():
+    """Result files are named by fingerprint; adding clip_norm must not
+    rename any of them."""
+    assert FedConfig(dirichlet_alpha=0.5, tag="baseline").fingerprint() == (
+        "dbececbce9b8"
+    )
+    assert FedConfig(dirichlet_alpha=0.1, tag="severe").fingerprint() == (
+        "6b496a47c12d"
+    )
+    assert FedConfig(dirichlet_alpha=100.0, tag="iid").fingerprint() == (
+        "cc591762a646"
+    )
+    assert FedConfig(dirichlet_alpha=0.5, clip_norm=1.0).fingerprint() != (
+        FedConfig(dirichlet_alpha=0.5).fingerprint()
+    )
+
+
+def test_clipping_bounds_every_sent_update():
+    ds = tiny_dataset()
+    cfg = FedConfig(
+        n_clients=4, rounds=3, local_epochs=1, batch_size=32, clip_norm=0.01
+    )
+    mon = UpdateStatsMonitor(3, 4, ds.n_classes, cfg.init_seed, range(1, 2))
+    run_federated(cfg, ds, equal_parts(ds.n_train, 4), update_hook=mon)
+    assert np.nanmax(mon.norm) <= 0.01 * (1 + 1e-6)
+
+
+def test_a_loose_clip_is_bitwise_identical_to_no_clip():
+    ds = tiny_dataset()
+    parts = equal_parts(ds.n_train, 4)
+    base = FedConfig(n_clients=4, rounds=3, local_epochs=1, batch_size=32)
+    loose = FedConfig(
+        n_clients=4, rounds=3, local_epochs=1, batch_size=32, clip_norm=1e9
+    )
+    a = run_federated(base, ds, parts)
+    b = run_federated(loose, ds, parts)
+    assert a.accuracy_curve() == b.accuracy_curve()
+    for k, v in a.final_state.items():
+        torch.testing.assert_close(v, b.final_state[k], rtol=0, atol=0)
+
+
+def test_clipping_leaves_the_probe_scoring_model_unclipped():
+    """Probes score the client's local model; only what it sends is clipped."""
+    ds = tiny_dataset()
+    cfg = FedConfig(
+        n_clients=3, rounds=1, local_epochs=1, batch_size=32, clip_norm=1e-6
+    )
+    seen = {}
+
+    def grab(updates, rnd):
+        seen["local"] = flatten(updates[0].state)
+        seen["sent"] = flatten(updates[0].sent)
+
+    run_federated(cfg, ds, equal_parts(ds.n_train, 3), update_hook=grab)
+    assert not torch.equal(seen["local"], seen["sent"])
+
+
+def test_fedrr_allowance_matches_the_authors_control_limits():
+    """FedRR's published limits (K = 5, ARL0 = 30) reproduce only with the
+    full d subtracted, which is what fedrr_cusum and in_control_arl do."""
+    for h, d in ((3.84, 0.4), (3.28, 0.5), (2.77, 0.6)):
+        arl = in_control_arl(h, 5, d, 1500, np.random.default_rng(1))
+        assert 24 <= arl <= 38, (h, d, arl)
+
+
+def test_review4_grid_cells_get_new_files_and_old_cells_keep_theirs():
+    import sys
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, str(repo / "scripts"))
+    from run_grid import plan
+
+    old = plan(seeds=[0], alphas=[0.5])
+    assert all(
+        (repo / "results" / f"{stem}.json").exists() for stem, _ in old
+    ), "default grid stems must still point at the published result files"
+    mid = plan(seeds=[0], alphas=[0.5], mid_only=True)
+    assert len(mid) == 1 + 4
+    for cell in (
+        plan(seeds=[0], alphas=[0.5], mid_only=True, partition_seed=1),
+        plan(seeds=[0], alphas=[0.5], mid_only=True, clip_norm=0.8),
+    ):
+        assert not {s for s, _ in cell} & {s for s, _ in old}
+    late = plan(seeds=[0], alphas=[0.5], mid_only=True, onset=22)
+    assert late[0][0] == mid[0][0]  # the healthy run is shared
+    assert not {s for s, _ in late[1:]} & {s for s, _ in mid[1:]}
+    clip = plan(seeds=[0], alphas=[0.5], mid_only=True, clip_norm=0.8)
+    assert all("--clip-norm" in a for _, a in clip)

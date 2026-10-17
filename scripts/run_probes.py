@@ -131,6 +131,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="also record update-space baseline signals (.updates.npz)",
     )
+    p.add_argument(
+        "--clip-norm",
+        type=float,
+        default=None,
+        help="clip each sent update to this L2 norm (DP-FedAvg style); "
+        "probes still score the unclipped local model",
+    )
     return p.parse_args()
 
 
@@ -149,6 +156,7 @@ def main() -> int:
         init_seed=args.init_seed,
         train_seed=args.train_seed,
         tag=args.tag,
+        clip_norm=args.clip_norm,
     )
     pcfg = ProbeConfig(n_probes=args.n_probes, probe_seed=args.probe_seed)
     sizes = [s for s in SIZES if s <= pcfg.n_probes] or [pcfg.n_probes]
