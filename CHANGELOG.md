@@ -2,6 +2,15 @@
 
 Stages were tagged in the private working repository. This public repository is a single squashed release (`v0.6.0`); each entry below states what that stage claimed and what it did not.
 
+## Unreleased: false-alarm rates counted where a CUSUM can fire (2026-10-17)
+- A CUSUM is undefined until its reference epoch ends (round 15), but false-alarm rates were
+  divided by every round after the ten-round burn-in, so every CUSUM-type rate was understated
+  by a quarter. Fixed in `telltale/metrics.py` and `scripts/score_faults.py` (ada3aac). README
+  figures corrected: CUSUM 1.5% to 2.0% of node-rounds at alpha 0.5 (images), acoustic 1.75%
+  to 2.3%, and the chance floors that depend on them. No detection count or threshold changes.
+- Calibration-seed rotation (`scripts/rotate_calibration.py`, 77f533f): every healthy seed
+  takes a turn as the calibration seed. Near-IID, seed 0 is an outlier.
+
 ## Unreleased: correction to the stage-4 claim on slow bias
 - Three sentences in the README said slow bias drift is detected under severe skew. The
   stage-4 grid shows bias 0.5 at alpha 0.1 caught in 0 of 3 seeds (`results/scores.json`;

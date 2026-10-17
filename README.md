@@ -398,8 +398,14 @@ drops only 2–4 points, and its confidence *rises*. It stays in the study as th
 | alpha | held-out node-rounds | persistence | own-history z | CUSUM |
 |---|---|---|---|---|
 | 0.1 | 200 | 0.0% | 0.0% | 0.0% |
-| 0.5 | 400 | 1.3% (any node: 10% of rounds) | 0.3% | 1.5% (any node: 12.5% of rounds) |
+| 0.5 | 400 | 1.3% (any node: 10% of rounds) | 0.3% | 2.0% (any node: 16.7% of rounds) |
 | 100 | 200 | 0.5% | 0.0% | 0.0% |
+
+*Corrected 2026-10-17:* CUSUM rates are now counted over the node-rounds where a CUSUM can
+fire (after its reference epoch ends at round 14), three quarters of the node-rounds in the
+second column. Before this they were divided by every round after burn-in and understated by
+a quarter (1.5% read for 2.0%). Detection numbers do not change. Six-seed results, with
+competitor detectors and the corrected counting, are in `results/scores.json`.
 
 The CUSUM threshold near-IID is 19.7 against 1.1 at alpha 0.5, because one healthy near-IID
 node's level climbed 36% over the tail in a fleet whose reference spread is 0.003 nats. That
@@ -427,7 +433,7 @@ Pd 1.00 with interval [0.44, 1.00]; 0 of 3 as [0.00, 0.56].
 |---|---|---|---|
 | label noise 0.5 | persistence **1.00** (ttd 3), CUSUM 1.00 | persistence **1.00** (ttd 3), CUSUM 1.00 | persistence **1.00** (ttd 4), CUSUM 1.00 |
 | blur 1.5 px | persistence 1.00, CUSUM 1.00 | CUSUM **1.00** (ttd 4), persistence 0.33 | CUSUM **1.00** (ttd 5), persistence 0.33 |
-| gain 1.0 | persistence 1.00, CUSUM 1.00 | 0.67 / 0.67 (chance 0.17 / 0.20) | **0.00** everything |
+| gain 1.0 | persistence 1.00, CUSUM 1.00 | 0.67 / 0.67 (chance 0.17 / 0.26) | **0.00** everything |
 | bias 0.5 | CUSUM 1.00, persistence 0.67 | CUSUM **1.00** (ttd 5), persistence 0.00 | 0.00 (persistence 0.33) |
 
 Three statements, each with its limit:
@@ -449,9 +455,10 @@ Three statements, each with its limit:
    runs before any further fault run.
 
 **False-alarm rate, held out (seeds 1 and 2, 400 node-rounds per alpha):** persistence 0.0% /
-1.3% / 0.5% and CUSUM 0.0% / 1.5% / 0.0% node-round at alpha 0.1 / 0.5 / 100. At alpha 0.5
-CUSUM's per-round any-node alarm rate is 12.5%: one false alarm somewhere in the fleet every
-eight rounds at the healthy-max threshold. That is the price of its sensitivity to slow drift,
+1.3% / 0.5% and CUSUM 0.0% / 2.0% / 0.0% node-round at alpha 0.1 / 0.5 / 100 (CUSUM counted
+over the rounds where it can fire; corrected 2026-10-17). At alpha 0.5 CUSUM's per-round
+any-node alarm rate is 16.7%: some node alarmed in about one held-out round in six at the
+healthy-max threshold. That is the price of its sensitivity to slow drift,
 and it is a curve, not a fact: raising the threshold trades it against time to detection.
 
 **What three seeds can and cannot say.** A 3-of-3 detection has a lower interval bound of
@@ -478,12 +485,12 @@ two-sided sum accumulates both. Then scored on the existing gain runs:
 | gain, alpha 0.5 | one-sided CUSUM | two-sided CUSUM |
 |---|---|---|
 | severity 0.25 | 0.00 | 0.67 |
-| severity 0.5 | 0.00 (chance 0.20) | **1.00** (chance 0.00, 0 false localisations, ttd 11) |
+| severity 0.5 | 0.00 (chance 0.26) | **1.00** (chance 0.00, 0 false localisations, ttd 11) |
 | severity 1.0 | 0.67 | 0.00 |
 
 The 0.5 row is a real recovery. The 1.0 row is not monotone and three seeds cannot say why.
 Under severe skew the two-sided version reads 1.00 on gain but its held-out false-alarm rate
-there gives a chance floor of 0.32, which disqualifies it. And its higher ceiling at alpha 0.5
+there gives a chance floor of 0.40, which disqualifies it. And its higher ceiling at alpha 0.5
 drops the all-kinds Pd at the healthy-max threshold from 0.92 to 0.67 (sweep below). The
 right structure is two separately calibrated one-sided sums, up and down, so that a downward
 wander does not raise the bar for upward drift. Named for the next session; not built.
@@ -497,10 +504,10 @@ fault kind (12 runs per point); alarm rate on held-out seeds (`figures/operating
 | 100 | persistence | 0.92 (5%) | 1.00 (43%) | 0.4 → 8.9 |
 | 100 | CUSUM | 1.00 (0%) | 1.00 (0%) | 7.5 → 15.0 |
 | 0.5 | persistence | 0.50 (10%) | 0.83 (45%) | 1.8 → 10.7 |
-| 0.5 | CUSUM | 0.92 (12.5%) | 1.00 (50%) | 9.0 → 21.9 |
-| 0.5 | two-sided CUSUM | 0.67 (0%) | 0.92 (28%) | 0.2 → 5.7 |
+| 0.5 | CUSUM | 0.92 (16.7%) | 1.00 (66.7%) | 9.0 → 21.9 |
+| 0.5 | two-sided CUSUM | 0.67 (0%) | 0.92 (36.7%) | 0.2 → 5.7 |
 | 0.1 | persistence | 0.42 (0%) | 0.75 (15%) | 0.0 → 5.5 |
-| 0.1 | CUSUM | 0.50 (0%) | 0.58 (12.5%) | 4.8 → 8.9 |
+| 0.1 | CUSUM | 0.50 (0%) | 0.58 (16.7%) | 4.8 → 8.9 |
 
 Read across a row: lowering the threshold buys detection with alarms *and* with mislocalised
 healthy nodes, and the second cost grows faster than the first. Read down a column: at the same
@@ -527,18 +534,18 @@ one-sided CUSUM, with the chance floor from the held-out false-alarm rate:
 
 | fault | alpha 100 | alpha 0.5 | alpha 0.1 |
 |---|---|---|---|
-| label noise 0.5 | **1.00** (chance 0.04, ttd 4) | 1.00 (chance 0.23, ttd 12, 5 false loc.) | 0.00 |
-| blur 1.5 | **1.00** (0.04, ttd 4) | 1.00 (0.23, ttd 10, 5 false loc.) | 0.00 |
-| gain 1.0 | **1.00** (0.04, ttd 5) | 1.00 (0.23, ttd 12, 4 false loc.) | 0.00 |
+| label noise 0.5 | **1.00** (chance 0.05, ttd 4) | 1.00 (chance 0.30, ttd 12, 5 false loc.) | 0.00 |
+| blur 1.5 | **1.00** (0.05, ttd 4) | 1.00 (0.30, ttd 10, 5 false loc.) | 0.00 |
+| gain 1.0 | **1.00** (0.05, ttd 5) | 1.00 (0.30, ttd 12, 4 false loc.) | 0.00 |
 | bias 0.5 | **1.00** (0.04, ttd 6) | 0.00 | 0.00 |
 
 Three things transfer and two do not:
 
-- **The ordering by heterogeneity transfers.** Everything at near-IID with a 4% chance floor,
+- **The ordering by heterogeneity transfers.** Everything at near-IID with a 5% chance floor,
   most things at moderate skew, nothing at severe skew, the stage-4 shape on a second, harder,
-  more relevant input. The moderate-skew catches are late (10–12 rounds) and sit against a 23%
-  chance floor, because the acoustic healthy runs alarm more (1.8% of node-rounds); they are
-  above chance with three seeds, not far above.
+  more relevant input. The moderate-skew catches are late (10–12 rounds) and sit against a 30%
+  chance floor, because the acoustic healthy runs alarm more (2.3% of node-rounds); with three
+  seeds they are above chance, but not by much.
 - **The cumulative statistic transfers; the peer-persistence statistic does not.** Persistence,
   which localised label corruption cleanly at every alpha on clothing, reads 0.67 at near-IID
   and zero elsewhere here. On a small dataset the model memorises recordings, every node's
@@ -610,7 +617,7 @@ detected and localised at every heterogeneity level three to four rounds after o
 blur drift is detected under moderate and severe skew, and slow bias drift under moderate skew,
 by CUSUM alone, four to seven rounds after onset; slow bias under severe skew is missed;
 gain drift is not reliably detected; the fleet accuracy metric hid all ninety faults; false
-alarms are 0–1.5% of node-rounds at the healthy-maximum threshold. It does not claim a
+alarms are 0–2.0% of node-rounds at the healthy-maximum threshold. It does not claim a
 detection probability tighter than the intervals shown, anything about node weight, anything
 about a submarine beyond one seed, or anything about sonar.
 
