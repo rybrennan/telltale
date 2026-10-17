@@ -57,6 +57,8 @@ from seeds, runs on a laptop CPU, ships as a container (`Dockerfile`).
 - Where it fails: gain drift; severe heterogeneity, where detection depends on which node is
   faulted; intervals from three seeds.
 
+**The preprint.** The paper's tables and figures regenerate from the tracked result files at commit `ada3aac` (`scripts/score_faults.py`, then `scripts/rotate_calibration.py`); a clean clone of that commit reproduces them byte for byte.
+
 **Reproduce.** `scripts/reproduce.sh` runs everything in order and prices each step first;
 `scripts/score_faults.py` and `scripts/make_figures.py` regenerate every table and figure from
 the tracked `results/*.json`. Tests: `python -m pytest -q` (no data download needed).

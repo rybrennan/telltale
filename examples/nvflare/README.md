@@ -61,6 +61,8 @@ does this calibration and the scoring below.
 
 Each run writes the detector history (every round's scores, the CUSUM path, flags and the
 sites sampled each round) to `--history_path`, default `/tmp/nvflare/telltale/history.json`.
+For the 72-run evaluation below, the sites sampled and flagged in every round of every run are
+kept in `results/nvflare_schedules.json` (the full histories, 173 MB, are not tracked).
 
 ## Results
 
