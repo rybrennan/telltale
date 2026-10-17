@@ -167,15 +167,59 @@ def flags_by_class(
 def false_alarm_rate(healthy: np.ndarray, thr: Threshold) -> float:
     """Fraction of healthy node-rounds after burn-in that are flagged.
 
+    Only node-rounds where the statistic is defined count. A CUSUM is NaN
+    until its reference epoch ends and cannot fire there; counting those
+    rounds in the denominator would understate its false-alarm rate.
+
     Args:
         healthy: (rounds, nodes) statistic series from a healthy run.
         thr: Threshold to apply.
 
     Returns:
-        The flagged fraction, or NaN if no rounds remain after burn-in.
+        The flagged fraction, or NaN if no defined node-round remains.
     """
-    f = flags(healthy, thr)[thr.burn_in :]
-    return float(f.mean()) if f.size else float("nan")
+    return node_round_rate(flags(healthy, thr), healthy, thr.burn_in)
+
+
+def node_round_rate(
+    flagged: np.ndarray, series: np.ndarray, burn_in: int
+) -> float:
+    """Flagged fraction of the defined node-rounds after burn-in.
+
+    Args:
+        flagged: (rounds, nodes) flags.
+        series: (rounds, nodes) statistic the flags came from; NaN marks a
+            node-round where the statistic is undefined.
+        burn_in: Leading rounds excluded.
+
+    Returns:
+        Flagged count over defined node-rounds, or NaN if none are defined.
+    """
+    defined = ~np.isnan(series[burn_in:])
+    n = int(defined.sum())
+    return float(flagged[burn_in:][defined].sum() / n) if n else float("nan")
+
+
+def round_alarm_rate(
+    flagged: np.ndarray, series: np.ndarray, burn_in: int
+) -> float:
+    """Fraction of rounds with any alarm, over rounds where any node is defined.
+
+    Args:
+        flagged: (rounds, nodes) flags.
+        series: (rounds, nodes) statistic the flags came from.
+        burn_in: Leading rounds excluded.
+
+    Returns:
+        Rounds with any alarm over rounds with any defined node-round, or NaN.
+    """
+    live = (~np.isnan(series[burn_in:])).any(axis=1)
+    n = int(live.sum())
+    return (
+        float(flagged[burn_in:].any(axis=1)[live].sum() / n)
+        if n
+        else float("nan")
+    )
 
 
 @dataclass(frozen=True)

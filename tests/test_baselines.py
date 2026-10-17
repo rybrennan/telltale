@@ -239,3 +239,26 @@ def test_load_prefers_exported_statistics_over_a_raw_array(
     np.savez_compressed(tmp_path / "r.stats.npz", level=np.ones((2, 2)))
     _, probs, _ = sf.load("r")
     assert isinstance(probs, dict) and probs["level"].sum() == 4
+
+
+def test_false_alarm_rate_ignores_rounds_where_the_statistic_is_undefined():
+    """A CUSUM cannot fire before its reference epoch ends; those rounds
+    must not dilute its false-alarm rate."""
+    from telltale.metrics import (
+        Threshold,
+        false_alarm_rate,
+        node_round_rate,
+        round_alarm_rate,
+    )
+
+    series = np.full((20, 2), np.nan)
+    series[15:] = 0.0
+    series[16, 0] = 5.0  # one alarm on one node
+    thr = Threshold("cusum", 1.0, 10, "max")
+    flagged = np.zeros_like(series, dtype=bool)
+    flagged[16, 0] = True
+    # 5 live rounds x 2 nodes = 10 defined node-rounds; 1 flagged
+    assert node_round_rate(flagged, series, 10) == 0.1
+    assert false_alarm_rate(series, thr) == 0.1
+    # 5 live rounds, 1 with an alarm
+    assert round_alarm_rate(flagged, series, 10) == 0.2

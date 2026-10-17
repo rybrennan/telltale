@@ -82,9 +82,11 @@ def rotate(results: Path) -> list[dict]:
                 )
                 far = np.mean(
                     [
-                        sf.flags_by_class(runs[s][1][name], thr, classes)[
-                            sf.BURN_IN :
-                        ].mean()
+                        sf.node_round_rate(
+                            sf.flags_by_class(runs[s][1][name], thr, classes),
+                            runs[s][1][name],
+                            sf.BURN_IN,
+                        )
                         for s in seeds
                         if s != c
                     ]

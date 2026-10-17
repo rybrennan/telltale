@@ -53,6 +53,8 @@ from telltale.metrics import (  # noqa: E402
     Threshold,
     calibrate_by_class,
     flags_by_class,
+    node_round_rate,
+    round_alarm_rate,
     score_flags,
 )
 
@@ -300,9 +302,9 @@ def main() -> int:
             node_rounds = []
             any_alarm = []
             for _, st in held:
-                fl = flags_by_class(st[name], thr, classes)[BURN_IN:]
-                node_rounds.append(fl.mean())
-                any_alarm.append(fl.any(axis=1).mean())
+                fl = flags_by_class(st[name], thr, classes)
+                node_rounds.append(node_round_rate(fl, st[name], BURN_IN))
+                any_alarm.append(round_alarm_rate(fl, st[name], BURN_IN))
             far[(fam, name)] = float(np.mean(node_rounds))
             summary["far"].append(
                 {
@@ -540,11 +542,10 @@ def main() -> int:
                 )
                 fars, anys = [], []
                 for sd in seeds[1:]:
-                    fl = flags_by_class(runs[sd][1][name], thr, classes)[
-                        BURN_IN:
-                    ]
-                    fars.append(fl.mean())
-                    anys.append(fl.any(axis=1).mean())
+                    series = runs[sd][1][name]
+                    fl = flags_by_class(series, thr, classes)
+                    fars.append(node_round_rate(fl, series, BURN_IN))
+                    anys.append(round_alarm_rate(fl, series, BURN_IN))
                 outs = [
                     score_flags(
                         flags_by_class(st[name], thr, classes),
