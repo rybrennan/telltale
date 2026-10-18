@@ -233,7 +233,7 @@ def table_detectors(scores: dict) -> str:
         "\\caption{Every detector with seed 0 as the calibration seed (LOO: leave-one-out). The pooled "
         "population (mid severity of each kind on clients 2, 5 and 9, 48 "
         "fault runs per level), threshold at each statistic's healthy "
-        "maximum on seed 0, false alarms per node-round on held-out seeds 1 "
+        "maximum on seed 0, false alarms per client per round on held-out seeds 1 "
         "to 5, Pd the fraction detected, TTD the median rounds to the first "
         "flag. The update-space statistics cannot be scored on the full "
         "population at $\\alpha = 0.1$ (no update records for clients 5 and "
@@ -369,7 +369,7 @@ def fig_operating_curve(scores: dict) -> None:
                     label=name)
         ax.set_title(ALPHA_LABEL[a].replace("$", "").replace("\\alpha",
                      "alpha"), loc="left", fontsize=9.5, color=INK)
-        ax.set_xlabel("held-out false alarms, % of node-rounds")
+        ax.set_xlabel("held-out false alarms, % of client-rounds")
         ax.set_ylim(-0.03, 1.05)
         style(ax)
     axes[0].set_ylabel("Pd, pooled mid-severity faults")
@@ -516,7 +516,7 @@ def table_rotation(repo: Path) -> str:
         "the calibration seed, the other five held out: median over the six "
         "choices, with the range in parentheses. Caught: mid-severity fault runs "
         "detected, of 48 per level (one fault of each kind at mid severity on "
-        "clients 2, 5 and 9). FAR: held-out false alarms per node-round. At "
+        "clients 2, 5 and 9). FAR: held-out false alarms per client per round. At "
         "$\\alpha = 0.1$ the update-space detectors are scored on client 2 "
         "only (24 runs), the one client with update records there. LOO: "
         "leave-one-out. With one healthy run setting the threshold, a held-out "
