@@ -356,3 +356,31 @@ def test_review4_grid_cells_get_new_files_and_old_cells_keep_theirs():
     assert not {s for s, _ in late[1:]} & {s for s, _ in mid[1:]}
     clip = plan(seeds=[0], alphas=[0.5], mid_only=True, clip_norm=0.8)
     assert all("--clip-norm" in a for _, a in clip)
+
+
+def test_recorder_keeps_the_pre_clip_norm():
+    """Under clipping the recorder must also store what the client trained,
+    or a clipping comparison sees only saturated norms."""
+    ds = tiny_dataset()
+    rec_args = (3, 4, ds.n_classes, 0, range(1, 2))
+    clipped = UpdateStatsMonitor(*rec_args)
+    run_federated(
+        FedConfig(
+            n_clients=4, rounds=3, local_epochs=1, batch_size=32, clip_norm=0.01
+        ),
+        ds,
+        equal_parts(ds.n_train, 4),
+        update_hook=clipped,
+    )
+    a = clipped.arrays()
+    assert np.nanmax(a["norm"]) <= 0.01 * (1 + 1e-6)
+    assert np.nanmin(a["norm_preclip"]) > 0.01
+    plain = UpdateStatsMonitor(*rec_args)
+    run_federated(
+        FedConfig(n_clients=4, rounds=3, local_epochs=1, batch_size=32),
+        ds,
+        equal_parts(ds.n_train, 4),
+        update_hook=plain,
+    )
+    b = plain.arrays()
+    np.testing.assert_array_equal(b["norm"], b["norm_preclip"])

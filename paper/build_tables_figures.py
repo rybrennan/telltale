@@ -85,8 +85,9 @@ def pd_rows(scores: dict, alpha: float, stat: str, node: int) -> list[dict]:
     ]
 
 
-def cell(scores: dict, alpha: float, stat: str, kind: str, sev: float,
-         node: int = 2) -> dict | None:
+def cell(
+    scores: dict, alpha: float, stat: str, kind: str, sev: float, node: int = 2
+) -> dict | None:
     """The one detection record for a fault kind and severity, or None."""
     rs = [
         r
@@ -146,10 +147,12 @@ def table_kinds(scores: dict) -> str:
         "\\setlength{\\tabcolsep}{4pt}",
         "\\begin{tabular}{l" + "ccc" * 3 + "}",
         "\\toprule",
-        " & " + " & ".join(
+        " & "
+        + " & ".join(
             f"\\multicolumn{{3}}{{c}}{{$\\alpha = {ALPHA_TEX[a]}$}}"
             for a in ALPHAS
-        ) + " \\\\",
+        )
+        + " \\\\",
         "\\cmidrule(lr){2-4}\\cmidrule(lr){5-7}\\cmidrule(lr){8-10}",
         "Fault (top severity) & "
         + " & ".join(["CUSUM", "TTD", "Persist."] * 3)
@@ -162,8 +165,9 @@ def table_kinds(scores: dict) -> str:
             c = cell(scores, a, "level_cusum", kind, sev)
             p = cell(scores, a, "persistence", kind, sev)
             cells += [k_of_n(c), ttd(c), k_of_n(p)]
-        lines.append(f"{KIND_TEX[kind]} {sev:g} & " + " & ".join(cells)
-                     + " \\\\")
+        lines.append(
+            f"{KIND_TEX[kind]} {sev:g} & " + " & ".join(cells) + " \\\\"
+        )
     lines += [
         "\\bottomrule",
         "\\end{tabular}",
@@ -206,10 +210,12 @@ def table_detectors(scores: dict) -> str:
         "\\setlength{\\tabcolsep}{3.2pt}",
         "\\begin{tabular}{l" + "ccc" * 3 + "}",
         "\\toprule",
-        " & " + " & ".join(
+        " & "
+        + " & ".join(
             f"\\multicolumn{{3}}{{c}}{{$\\alpha = {ALPHA_TEX[a]}$}}"
             for a in ALPHAS
-        ) + " \\\\",
+        )
+        + " \\\\",
         "\\cmidrule(lr){2-4}\\cmidrule(lr){5-7}\\cmidrule(lr){8-10}",
         "Detector & " + " & ".join(["FAR \\%", "Pd", "TTD"] * 3) + " \\\\",
         "\\midrule",
@@ -275,17 +281,20 @@ def table_clients(scores: dict) -> str:
         "\\setlength{\\tabcolsep}{4pt}",
         "\\begin{tabular}{l" + "ccc" * 3 + "}",
         "\\toprule",
-        " & " + " & ".join(
+        " & "
+        + " & ".join(
             f"\\multicolumn{{3}}{{c}}{{$\\alpha = {ALPHA_TEX[a]}$}}"
             for a in ALPHAS
-        ) + " \\\\",
+        )
+        + " \\\\",
         "\\cmidrule(lr){2-4}\\cmidrule(lr){5-7}\\cmidrule(lr){8-10}",
         "Detector & " + " & ".join(["c2", "c5", "c9"] * 3) + " \\\\",
         "\\midrule",
     ]
     for stat, name in stats:
-        cells = [count_mid(scores, a, stat, n) for a in ALPHAS
-                 for n in (2, 5, 9)]
+        cells = [
+            count_mid(scores, a, stat, n) for a in ALPHAS for n in (2, 5, 9)
+        ]
         lines.append(f"{name} & " + " & ".join(cells) + " \\\\")
     lines += [
         "\\bottomrule",
@@ -303,8 +312,11 @@ def table_clients(scores: dict) -> str:
 
 def table_grid(scores: dict) -> str:
     """Appendix table: every severity, three probe statistics, client 2."""
-    stats = [("level_cusum", "CUSUM"), ("persistence", "Persist."),
-             ("level_z", "$z$")]
+    stats = [
+        ("level_cusum", "CUSUM"),
+        ("persistence", "Persist."),
+        ("level_z", "$z$"),
+    ]
     lines = [
         "\\begin{table}[H]",
         "\\centering",
@@ -312,20 +324,26 @@ def table_grid(scores: dict) -> str:
         "\\setlength{\\tabcolsep}{3.5pt}",
         "\\begin{tabular}{l" + "ccc" * 3 + "}",
         "\\toprule",
-        " & " + " & ".join(
+        " & "
+        + " & ".join(
             f"\\multicolumn{{3}}{{c}}{{$\\alpha = {ALPHA_TEX[a]}$}}"
             for a in ALPHAS
-        ) + " \\\\",
+        )
+        + " \\\\",
         "\\cmidrule(lr){2-4}\\cmidrule(lr){5-7}\\cmidrule(lr){8-10}",
         "Fault & " + " & ".join([s[1] for s in stats] * 3) + " \\\\",
         "\\midrule",
     ]
     for kind, sevs in SEVERITIES.items():
         for sev in sevs:
-            cells = [k_of_n(cell(scores, a, st, kind, sev))
-                     for a in ALPHAS for st, _ in stats]
-            lines.append(f"{KIND_TEX[kind]} {sev:g} & " + " & ".join(cells)
-                         + " \\\\")
+            cells = [
+                k_of_n(cell(scores, a, st, kind, sev))
+                for a in ALPHAS
+                for st, _ in stats
+            ]
+            lines.append(
+                f"{KIND_TEX[kind]} {sev:g} & " + " & ".join(cells) + " \\\\"
+            )
     lines += [
         "\\bottomrule",
         "\\end{tabular}",
@@ -348,27 +366,47 @@ def style(ax: plt.Axes) -> None:
 
 def fig_operating_curve(scores: dict) -> None:
     """Pd against held-out false-alarm rate across the threshold sweep."""
-    stats = [("level_cusum", "probe CUSUM", "s"),
-             ("update_norm_cusum", "update norm, same CUSUM", "o"),
-             ("fedrr", "FedRR", "^")]
+    stats = [
+        ("level_cusum", "probe CUSUM", "s"),
+        ("update_norm_cusum", "update norm, same CUSUM", "o"),
+        ("fedrr", "FedRR", "^"),
+    ]
     fig, axes = plt.subplots(1, 3, figsize=(9.6, 3.1), sharey=True)
-    shades = {"level_cusum": INK, "update_norm_cusum": "#eb6834",
-              "fedrr": "#2a78d6"}
+    shades = {
+        "level_cusum": INK,
+        "update_norm_cusum": "#eb6834",
+        "fedrr": "#2a78d6",
+    }
     for ax, a in zip(axes, ALPHAS, strict=True):
         for st, name, marker in stats:
-            pts = sorted({
-                (r["node_round_far"], r["pd"])
-                for r in scores["sweep"]
-                if r["dataset"] == "fashion_mnist" and r["alpha"] == a
-                and r["stat"] == st and r["n"] and r["n"] >= 48
-            })  # a set: the maximum and a high quantile can coincide
+            pts = sorted(
+                {
+                    (r["node_round_far"], r["pd"])
+                    for r in scores["sweep"]
+                    if r["dataset"] == "fashion_mnist"
+                    and r["alpha"] == a
+                    and r["stat"] == st
+                    and r["n"]
+                    and r["n"] >= 48
+                }
+            )  # a set: the maximum and a high quantile can coincide
             if not pts:
                 continue
-            ax.plot([100 * p[0] for p in pts], [p[1] for p in pts],
-                    "-" + marker, color=shades[st], ms=5, lw=1.4,
-                    label=name)
-        ax.set_title(ALPHA_LABEL[a].replace("$", "").replace("\\alpha",
-                     "alpha"), loc="left", fontsize=9.5, color=INK)
+            ax.plot(
+                [100 * p[0] for p in pts],
+                [p[1] for p in pts],
+                "-" + marker,
+                color=shades[st],
+                ms=5,
+                lw=1.4,
+                label=name,
+            )
+        ax.set_title(
+            ALPHA_LABEL[a].replace("$", "").replace("\\alpha", "alpha"),
+            loc="left",
+            fontsize=9.5,
+            color=INK,
+        )
         ax.set_xlabel("held-out false alarms, % of client-rounds")
         ax.set_ylim(-0.03, 1.05)
         style(ax)
@@ -390,38 +428,55 @@ def fig_drift_trace(repo: Path) -> None:
     healthy = fault = None
     for f in sorted(res.glob("probes_baseline_*.json")):
         d = json.loads(f.read_text())
-        if (d["config"]["dirichlet_alpha"] == 0.5
-                and d["config"]["train_seed"] == 0
-                and not d.get("contact") and not d.get("fault")):
+        if (
+            d["config"]["dirichlet_alpha"] == 0.5
+            and d["config"]["train_seed"] == 0
+            and not d.get("contact")
+            and not d.get("fault")
+        ):
             healthy = (f, d)
             break
     for f in sorted(res.glob("fault_baseline_*.json")):
         d = json.loads(f.read_text())
         fa = d["fault"]
-        if (fa["kind"] == "bias" and fa["node"] == 2 and fa["ramp"] == 10
-                and abs(fa["severity"] - 0.5) < 1e-9
-                and d["config"]["train_seed"] == 0 and not d.get("contact")
-                and healthy and d["fed_fingerprint"]
-                == healthy[1]["fed_fingerprint"]):
+        if (
+            fa["kind"] == "bias"
+            and fa["node"] == 2
+            and fa["ramp"] == 10
+            and abs(fa["severity"] - 0.5) < 1e-9
+            and d["config"]["train_seed"] == 0
+            and not d.get("contact")
+            and healthy
+            and d["fed_fingerprint"] == healthy[1]["fed_fingerprint"]
+        ):
             fault = (f, d)
             break
     if healthy is None or fault is None:
-        raise SystemExit("drift trace: matching healthy and fault runs "
-                         "not found")
+        raise SystemExit(
+            "drift trace: matching healthy and fault runs not found"
+        )
     hs = np.load(healthy[0].with_suffix(".stats.npz"))["level_cusum"]
     fs = np.load(fault[0].with_suffix(".stats.npz"))["level_cusum"]
     thr = float(np.nanmax(hs[10:]))
     rounds = np.arange(hs.shape[0])  # 0-based, as onset 15 is
     h_acc = [r["test_acc"] for r in healthy[1]["rounds"]]
     f_acc = [r["test_acc"] for r in fault[1]["rounds"]]
-    cross = [int(rounds[i]) for i in range(len(rounds))
-             if np.isfinite(fs[i, 2]) and fs[i, 2] > thr]
+    cross = [
+        int(rounds[i])
+        for i in range(len(rounds))
+        if np.isfinite(fs[i, 2]) and fs[i, 2] > thr
+    ]
 
     fig, axes = plt.subplots(2, 1, figsize=(6.4, 5.0), sharex=True)
     ax = axes[0]
     ax.plot(rounds, h_acc, color=INK2, lw=1.8, label="healthy fleet")
-    ax.plot(rounds, f_acc, color="#eb6834", lw=1.8,
-            label="client 2 drifting from round 15")
+    ax.plot(
+        rounds,
+        f_acc,
+        color="#eb6834",
+        lw=1.8,
+        label="client 2 drifting from round 15",
+    )
     ax.axvspan(15, 25, color="#eb6834", alpha=0.08, lw=0)
     lo = min(min(h_acc[5:]), min(f_acc[5:]))
     ax.set_ylim(lo - 0.01, max(max(h_acc), max(f_acc)) + 0.01)
@@ -435,8 +490,14 @@ def fig_drift_trace(repo: Path) -> None:
     ax.plot(rounds, fs[:, 2], color="#eb6834", lw=2.0, label="client 2")
     ax.plot([], [], color=GRID, lw=1.1, label="other nine clients")
     ax.axhline(thr, color=INK, lw=0.9, ls="--")
-    ax.annotate(f"healthy maximum {thr:.2f}", (5, thr), xytext=(0, 4),
-                textcoords="offset points", color=INK2, fontsize=8.5)
+    ax.annotate(
+        f"healthy maximum {thr:.2f}",
+        (5, thr),
+        xytext=(0, 4),
+        textcoords="offset points",
+        color=INK2,
+        fontsize=8.5,
+    )
     ax.axvspan(15, 25, color="#eb6834", alpha=0.08, lw=0)
     ax.set_xlabel("round")
     ax.set_xlim(4.5, rounds[-1] + 0.5)
@@ -446,11 +507,18 @@ def fig_drift_trace(repo: Path) -> None:
     fig.tight_layout()
     fig.savefig(FIGURES / "drift_trace.png", dpi=200)
     plt.close(fig)
-    (FIGURES / "drift_trace.json").write_text(json.dumps({
-        "healthy": healthy[0].name, "fault": fault[0].name,
-        "threshold": thr, "first_round_above": cross[0] if cross else None,
-        "onset_round": 15}, indent=2))
-
+    (FIGURES / "drift_trace.json").write_text(
+        json.dumps(
+            {
+                "healthy": healthy[0].name,
+                "fault": fault[0].name,
+                "threshold": thr,
+                "first_round_above": cross[0] if cross else None,
+                "onset_round": 15,
+            },
+            indent=2,
+        )
+    )
 
 
 ROTATION_NAMES = [
@@ -500,9 +568,7 @@ def table_rotation(repo: Path) -> str:
             for a in ALPHAS
         )
         + " \\\\",
-        "".join(
-            f"\\cmidrule(lr){{{2 + 2 * i}-{3 + 2 * i}}}" for i in range(3)
-        ),
+        "".join(f"\\cmidrule(lr){{{2 + 2 * i}-{3 + 2 * i}}}" for i in range(3)),
         "Detector & " + " & ".join(["Caught", "FAR \\%"] * 3) + " \\\\",
         "\\midrule",
     ]
@@ -599,7 +665,8 @@ def table_fedrr_native(scores: dict) -> str:
         "\\small",
         "\\begin{tabular}{llccc}",
         "\\toprule",
-        " & & " + " & ".join(f"$\\alpha = {ALPHA_TEX[a]}$" for a in ALPHAS)
+        " & & "
+        + " & ".join(f"$\\alpha = {ALPHA_TEX[a]}$" for a in ALPHAS)
         + " \\\\",
         "\\midrule",
     ]
@@ -647,7 +714,9 @@ def table_fedrr_native(scores: dict) -> str:
     ]
     return "\n".join(lines) + "\n"
 
+
 def main() -> int:
+    """Write every table and figure; print what was written."""
     if len(sys.argv) != 2:
         print(__doc__)
         return 2
@@ -664,8 +733,11 @@ def main() -> int:
     (TABLES / "pooled.tex").write_text(table_pooled(repo))
     fig_operating_curve(scores)
     fig_drift_trace(repo)
-    print("wrote", sorted(p.name for p in TABLES.iterdir()),
-          sorted(p.name for p in FIGURES.iterdir()))
+    print(
+        "wrote",
+        sorted(p.name for p in TABLES.iterdir()),
+        sorted(p.name for p in FIGURES.iterdir()),
+    )
     return 0
 
 

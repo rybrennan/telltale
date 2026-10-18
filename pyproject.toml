@@ -42,3 +42,4 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D", "ANN"]
 "scripts/*" = ["E402", "D103", "ANN"]
+"paper/*" = ["E501"]  # LaTeX caption strings

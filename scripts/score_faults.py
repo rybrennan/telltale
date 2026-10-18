@@ -124,6 +124,13 @@ def statistics(
                 updates["norm"], FEDRR_START, FEDRR_D, seed=seed
             ),
         }
+        if "norm_preclip" in updates:
+            # The client's own update norm before clipping, as a client
+            # could self-report it; differs from update_norm_cusum only in
+            # runs that clip.
+            base["update_preclip_cusum"] = cusum(
+                updates["norm_preclip"], REFERENCE, pool=classes
+            )
         if steps is not None:
             base["fedrr_steps"] = fedrr_cusum(
                 updates["resid"] / steps, FEDRR_START, FEDRR_D, seed=seed
@@ -243,6 +250,7 @@ STATS = (
     "level_cusum2",
     "update_norm_cusum",
     "update_loo_cusum",
+    "update_preclip_cusum",
     "fedrr",
     "fedrr_norm",
     "fedrr_steps",

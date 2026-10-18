@@ -147,6 +147,7 @@ class UpdateStatsMonitor:
         """
         shape = (n_rounds, n_clients)
         self.norm = np.full(shape, np.nan)
+        self.norm_preclip = np.full(shape, np.nan)
         self.loo_dist = np.full(shape, np.nan)
         self.resid = np.full(shape, np.nan)
         self.fit_rounds = fit_rounds
@@ -174,6 +175,16 @@ class UpdateStatsMonitor:
         for i, (u, d) in enumerate(zip(updates, deltas, strict=True)):
             k = u.client_id
             self.norm[round_idx, k] = float(torch.linalg.vector_norm(d))
+            # What the client trained, before any clipping. Equal to `norm`
+            # unless the run clips; a monitor that the client reports to
+            # could see this even when the server only sees `sent`.
+            self.norm_preclip[round_idx, k] = (
+                self.norm[round_idx, k]
+                if u.sent_state is None
+                else float(
+                    torch.linalg.vector_norm(flatten(u.state) - self._global)
+                )
+            )
             if len(updates) > 1:
                 others = (total - d * weights[i]) / (weights.sum() - weights[i])
                 cos = torch.nn.functional.cosine_similarity(d, others, dim=0)
@@ -194,11 +205,13 @@ class UpdateStatsMonitor:
         """Return the recorded signals and the subspace's size.
 
         Returns:
-            Dict of (round, client) arrays `norm`, `loo_dist`, `resid`, plus
+            Dict of (round, client) arrays `norm`, `norm_preclip`,
+            `loo_dist`, `resid`, plus
             `q`, `held` and `fit_rounds` as arrays for an .npz file.
         """
         return {
             "norm": self.norm,
+            "norm_preclip": self.norm_preclip,
             "loo_dist": self.loo_dist,
             "resid": self.resid,
             "q": np.array(-1 if self.q is None else self.q),
