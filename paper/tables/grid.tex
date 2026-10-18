@@ -1,0 +1,25 @@
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lccccccccc}
+\toprule
+ & \multicolumn{3}{c}{$\alpha = 0.1$} & \multicolumn{3}{c}{$\alpha = 0.5$} & \multicolumn{3}{c}{$\alpha = 100$} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+Fault & CUSUM & Persist. & $z$ & CUSUM & Persist. & $z$ & CUSUM & Persist. & $z$ \\
+\midrule
+label noise 0.1 & 0/6 & 1/6 & 2/6 & 5/6 & 0/6 & 6/6 & 6/6 & 0/6 & 6/6 \\
+label noise 0.3 & 5/6 & 6/6 & 1/6 & 6/6 & 6/6 & 4/6 & 6/6 & 6/6 & 6/6 \\
+label noise 0.5 & 6/6 & 6/6 & 0/6 & 6/6 & 6/6 & 6/6 & 6/6 & 6/6 & 6/6 \\
+blur (px) 0.5 & 2/6 & 0/6 & 0/6 & 2/6 & 0/6 & 5/6 & 0/6 & 0/6 & 0/6 \\
+blur (px) 1 & 6/6 & 0/6 & 0/6 & 6/6 & 3/6 & 3/6 & 4/6 & 5/6 & 6/6 \\
+blur (px) 1.5 & 6/6 & 1/6 & 0/6 & 6/6 & 4/6 & 2/6 & 6/6 & 6/6 & 6/6 \\
+gain 0.25 & 1/6 & 0/6 & 0/6 & 0/6 & 0/6 & 6/6 & 0/6 & 0/6 & 1/6 \\
+gain 0.5 & 1/6 & 0/6 & 0/6 & 0/6 & 0/6 & 6/6 & 1/6 & 1/6 & 6/6 \\
+gain 1 & 0/6 & 0/6 & 0/6 & 5/6 & 4/6 & 5/6 & 6/6 & 6/6 & 6/6 \\
+bias (SD) 0.5 & 1/6 & 1/6 & 0/6 & 6/6 & 1/6 & 2/6 & 6/6 & 3/6 & 6/6 \\
+\bottomrule
+\end{tabular}
+\caption{Seeds detected out of six, every fault on client 2, thresholds at the healthy maximum of seed 0. Wilson 95\% intervals for $k$ of 6: 0: [0.00, 0.39]; 1: [0.03, 0.56]; 2: [0.10, 0.70]; 3: [0.19, 0.81]; 4: [0.30, 0.90]; 5: [0.44, 0.97]; 6: [0.61, 1.00].}
+\label{tab:grid}
+\end{table}

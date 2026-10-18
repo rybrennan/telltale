@@ -1,0 +1,7 @@
+{
+  "healthy": "probes_baseline_dbececbce9b8_a03670f9f634.json",
+  "fault": "fault_baseline_dbececbce9b8_a03670f9f634_69d8d2300dc0.json",
+  "threshold": 0.9709846639476614,
+  "first_round_above": 20,
+  "onset_round": 15
+}

@@ -35,6 +35,7 @@ STATS = (
     "update_norm_cusum",
     "update_loo_cusum",
     "fedrr",
+    "fedrr_steps",
 )
 
 

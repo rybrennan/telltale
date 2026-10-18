@@ -330,6 +330,72 @@
   "fault_runs_client2": 24
  },
  {
+  "alpha": 0.5,
+  "stat": "fedrr_steps",
+  "calibration_seed": 0,
+  "threshold": 15.444306046571254,
+  "node_round_far": 0.006666666666666666,
+  "detected": 29,
+  "fault_runs": 48,
+  "detected_client2": 18,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.5,
+  "stat": "fedrr_steps",
+  "calibration_seed": 1,
+  "threshold": 16.549292930737135,
+  "node_round_far": 0.002666666666666667,
+  "detected": 17,
+  "fault_runs": 48,
+  "detected_client2": 9,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.5,
+  "stat": "fedrr_steps",
+  "calibration_seed": 2,
+  "threshold": 13.07834866319591,
+  "node_round_far": 0.021333333333333336,
+  "detected": 36,
+  "fault_runs": 48,
+  "detected_client2": 23,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.5,
+  "stat": "fedrr_steps",
+  "calibration_seed": 3,
+  "threshold": 15.130194058366552,
+  "node_round_far": 0.008,
+  "detected": 29,
+  "fault_runs": 48,
+  "detected_client2": 18,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.5,
+  "stat": "fedrr_steps",
+  "calibration_seed": 4,
+  "threshold": 15.501668120135172,
+  "node_round_far": 0.005333333333333334,
+  "detected": 24,
+  "fault_runs": 48,
+  "detected_client2": 14,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.5,
+  "stat": "fedrr_steps",
+  "calibration_seed": 5,
+  "threshold": 17.718731096286362,
+  "node_round_far": 0.0,
+  "detected": 10,
+  "fault_runs": 48,
+  "detected_client2": 4,
+  "fault_runs_client2": 24
+ },
+ {
   "alpha": 100.0,
   "stat": "level_cusum",
   "calibration_seed": 0,
@@ -660,6 +726,72 @@
   "fault_runs_client2": 24
  },
  {
+  "alpha": 100.0,
+  "stat": "fedrr_steps",
+  "calibration_seed": 0,
+  "threshold": 9.109915668664181,
+  "node_round_far": 0.022666666666666665,
+  "detected": 45,
+  "fault_runs": 48,
+  "detected_client2": 21,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 100.0,
+  "stat": "fedrr_steps",
+  "calibration_seed": 1,
+  "threshold": 14.15659258140973,
+  "node_round_far": 0.0,
+  "detected": 30,
+  "fault_runs": 48,
+  "detected_client2": 11,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 100.0,
+  "stat": "fedrr_steps",
+  "calibration_seed": 2,
+  "threshold": 11.728728797566525,
+  "node_round_far": 0.004,
+  "detected": 35,
+  "fault_runs": 48,
+  "detected_client2": 14,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 100.0,
+  "stat": "fedrr_steps",
+  "calibration_seed": 3,
+  "threshold": 8.21447168214472,
+  "node_round_far": 0.027999999999999997,
+  "detected": 47,
+  "fault_runs": 48,
+  "detected_client2": 23,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 100.0,
+  "stat": "fedrr_steps",
+  "calibration_seed": 4,
+  "threshold": 11.661131892698226,
+  "node_round_far": 0.006666666666666666,
+  "detected": 35,
+  "fault_runs": 48,
+  "detected_client2": 14,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 100.0,
+  "stat": "fedrr_steps",
+  "calibration_seed": 5,
+  "threshold": 9.160720995492927,
+  "node_round_far": 0.021333333333333333,
+  "detected": 45,
+  "fault_runs": 48,
+  "detected_client2": 21,
+  "fault_runs_client2": 24
+ },
+ {
   "alpha": 0.1,
   "stat": "level_cusum",
   "calibration_seed": 0,
@@ -987,6 +1119,72 @@
   "detected": 1,
   "fault_runs": 24,
   "detected_client2": 1,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.1,
+  "stat": "fedrr_steps",
+  "calibration_seed": 0,
+  "threshold": 18.733121732324186,
+  "node_round_far": 0.002666666666666667,
+  "detected": 4,
+  "fault_runs": 24,
+  "detected_client2": 4,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.1,
+  "stat": "fedrr_steps",
+  "calibration_seed": 1,
+  "threshold": 17.484617460072716,
+  "node_round_far": 0.006666666666666666,
+  "detected": 8,
+  "fault_runs": 24,
+  "detected_client2": 8,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.1,
+  "stat": "fedrr_steps",
+  "calibration_seed": 2,
+  "threshold": 14.750328963862248,
+  "node_round_far": 0.02,
+  "detected": 20,
+  "fault_runs": 24,
+  "detected_client2": 20,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.1,
+  "stat": "fedrr_steps",
+  "calibration_seed": 3,
+  "threshold": 16.12639097849895,
+  "node_round_far": 0.012,
+  "detected": 12,
+  "fault_runs": 24,
+  "detected_client2": 12,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.1,
+  "stat": "fedrr_steps",
+  "calibration_seed": 4,
+  "threshold": 15.501668120135172,
+  "node_round_far": 0.014666666666666666,
+  "detected": 16,
+  "fault_runs": 24,
+  "detected_client2": 16,
+  "fault_runs_client2": 24
+ },
+ {
+  "alpha": 0.1,
+  "stat": "fedrr_steps",
+  "calibration_seed": 5,
+  "threshold": 19.975424519653302,
+  "node_round_far": 0.0,
+  "detected": 0,
+  "fault_runs": 24,
+  "detected_client2": 0,
   "fault_runs_client2": 24
  }
 ]

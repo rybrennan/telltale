@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccccccc}
+\toprule
+ & \multicolumn{3}{c}{$\alpha = 0.1$} & \multicolumn{3}{c}{$\alpha = 0.5$} & \multicolumn{3}{c}{$\alpha = 100$} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+Detector & c2 & c5 & c9 & c2 & c5 & c9 & c2 & c5 & c9 \\
+\midrule
+Probe CUSUM & 13/24 & 3/12 & 0/12 & 18/24 & 9/12 & 9/12 & 17/24 & 11/12 & 6/12 \\
+Probe within-round $z$ & 1/24 & 1/12 & 7/12 & 15/24 & 4/12 & 3/12 & 24/24 & 12/12 & 11/12 \\
+Update norm, same CUSUM & 8/24 & -- & -- & 24/24 & 12/12 & 3/12 & 24/24 & 12/12 & 12/12 \\
+FedRR, healthy-max threshold & 1/24 & -- & -- & 2/24 & 1/12 & 8/12 & 24/24 & 12/12 & 12/12 \\
+\bottomrule
+\end{tabular}
+\caption{Fault runs detected by which client is faulted, mid severity of each kind (client 2: six seeds, 24 runs; clients 5 and 9: three seeds, 12 runs). Clients 5 and 9 at $\alpha = 0.1$ have no update records, so the update-space detectors are scored on client 2 only there.}
+\label{tab:clients}
+\end{table}
