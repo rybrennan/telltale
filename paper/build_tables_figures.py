@@ -606,6 +606,8 @@ def table_pooled(repo: Path) -> str:
             (repo / "results" / "review4_scores.json").read_text()
         )
         if r["protocol"] == "pooled5"
+        and r.get("partition_seed", 0) == 0
+        and r.get("clip_norm") is None
     }
     lines = [
         "\\begin{table}[t]",

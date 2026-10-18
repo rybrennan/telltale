@@ -211,6 +211,9 @@ def main() -> int:
                 rows.append(
                     {
                         "alpha": alpha,
+                        "partition_seed": d0["config"]["partition_seed"],
+                        "clip_norm": d0["config"].get("clip_norm"),
+                        "onset": args.onset,
                         "stat": name,
                         "protocol": protocol,
                         "healthy_runs_scored": len(healthy_run),
@@ -230,21 +233,36 @@ def main() -> int:
                 )
 
     print(
-        "| alpha | stat | protocol | node-round FAR | healthy runs alarmed | "
+        "| alpha | partition | clip | stat | protocol | node-round FAR | "
+        "healthy runs alarmed | "
         "mid detected | mid strict | healthy clients flagged per fault run |"
     )
-    print("|---|---|---|---|---|---|---|---|")
-    for r in sorted(rows, key=lambda r: (r["alpha"], r["stat"], r["protocol"])):
+    print("|---|---|---|---|---|---|---|---|---|---|")
+    for r in sorted(
+        rows,
+        key=lambda r: (
+            r["alpha"],
+            r["partition_seed"],
+            str(r["clip_norm"]),
+            r["stat"],
+            r["protocol"],
+        ),
+    ):
         m, k = r["mid"], r["per_choice"]
         print(
-            f"| {r['alpha']} | {r['stat']} | {r['protocol']} | "
+            f"| {r['alpha']} | {r['partition_seed']} | {r['clip_norm']} | "
+            f"{r['stat']} | {r['protocol']} | "
             f"{100 * r['node_round_far']:.1f}% | "
             f"{r['run_alarms']}/{r['healthy_runs_scored']} | "
             f"{m['detected'] / k:.1f}/{m['n'] // k} | "
             f"{m['strict'] / k:.1f}/{m['n'] // k} | "
             f"{m['false_clients_mean']:.2f} |"
         )
-    out = args.out or args.results / "review4_scores.json"
+    out = args.out or args.results / (
+        "review4_scores.json"
+        if args.onset == 15
+        else f"review4_scores_onset{args.onset}.json"
+    )
     out.write_text(json.dumps(rows, indent=1))
     print(f"\nwrote {out}")
     return 0
