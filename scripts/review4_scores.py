@@ -47,6 +47,7 @@ STATS = (
     "level_z",
     "update_norm_cusum",
     "update_loo_cusum",
+    "update_preclip_cusum",
     "fedrr",
     "fedrr_steps",
 )
