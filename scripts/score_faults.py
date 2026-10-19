@@ -39,6 +39,7 @@ from telltale.baselines import (  # noqa: E402
     fedrr_cusum,
     fedrr_threshold,
     local_steps,
+    peer_relative,
 )
 from telltale.contact import ContactSchedule  # noqa: E402
 from telltale.detect import (  # noqa: E402
@@ -151,6 +152,13 @@ def statistics(
                 updates["norm"], FEDRR_START, FEDRR_D, seed=seed
             ),
         }
+        # Post hoc: the client-reported norm relative to its peers, so a
+        # trend common to the whole fleet (clipping) cannot pin the CUSUM.
+        base["update_peer_norm_cusum"] = cusum(
+            peer_relative(updates.get("norm_preclip", updates["norm"])),
+            REFERENCE,
+            pool=classes,
+        )
         if "norm_preclip" in updates:
             # The client's own update norm before clipping, as a client
             # could self-report it; differs from update_norm_cusum only in

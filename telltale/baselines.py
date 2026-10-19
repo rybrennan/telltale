@@ -42,6 +42,8 @@ randomness, so a run with it attached is bitwise identical to one without.
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 import torch
 from scipy.stats import norm as _normal
@@ -218,6 +220,33 @@ class UpdateStatsMonitor:
             "held": np.array(np.nan if self.held is None else self.held),
             "fit_rounds": np.array(list(self.fit_rounds)),
         }
+
+
+def peer_relative(x: np.ndarray) -> np.ndarray:
+    """Each client's value divided by the median of the other clients' values.
+
+    A signal that moves for the whole fleet at once, such as every update norm
+    falling as training settles, cancels out; a client that moves against its
+    peers does not. The probe level is relative to the peers by construction
+    (divergence from the leave-one-out consensus); this gives an update norm
+    the same property, so the two can be compared on equal terms. Added after
+    a review found that a plain norm CUSUM under clipping was scored against a
+    reference epoch in which every norm was still falling, so it is a post hoc
+    statistic.
+
+    Args:
+        x: (rounds, clients) positive signal, NaN where a client is absent.
+
+    Returns:
+        (rounds, clients) ratio to the median of the other clients that round;
+        NaN where there is no peer value.
+    """
+    out = np.full(x.shape, np.nan)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        for k in range(x.shape[1]):
+            out[:, k] = x[:, k] / np.nanmedian(np.delete(x, k, axis=1), axis=1)
+    return out
 
 
 def local_steps(

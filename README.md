@@ -57,7 +57,7 @@ from seeds, runs on a laptop CPU, ships as a container (`Dockerfile`).
 - Where it fails: gain drift; severe heterogeneity, where detection depends on which node is
   faulted; intervals from three seeds.
 
-**The preprint.** The paper's tables and figures regenerate from the tracked result files at the commit tagged `preprint-v1` (named in the paper): `scripts/score_faults.py`, `scripts/rotate_calibration.py` and `scripts/review4_scores.py` score the runs, then `paper/build_tables_figures.py` writes every table and figure. The partition, onset and clipping cells (`run_grid.py --partition-seed`, `--onset`, `--clip-norm`) are scored by `review4_scores.py` and excluded from the main-grid scripts. `scripts/fedrr_sensitivity.py` compares FedRR's CUSUM allowance as printed in its paper (d/2) with the one used here (d). A clean clone of that commit reproduces the tables byte for byte.
+**The preprint.** The paper's tables and figures regenerate from the tracked result files at the commit tagged `preprint-v2` (named in the paper): `scripts/score_faults.py`, `scripts/rotate_calibration.py` and `scripts/review4_scores.py` score the runs, then `paper/build_tables_figures.py` writes every table and figure. The partition, onset and clipping cells (`run_grid.py --partition-seed`, `--onset`, `--clip-norm`) are scored by `review4_scores.py` and excluded from the main-grid scripts. `scripts/fedrr_sensitivity.py` compares FedRR's CUSUM allowance as printed in its paper (d/2) with the one used here (d). A clean clone of that commit reproduces the tables byte for byte.
 
 **Reproduce.** `scripts/reproduce.sh` runs everything in order and prices each step first;
 `scripts/score_faults.py` and `scripts/make_figures.py` regenerate every table and figure from

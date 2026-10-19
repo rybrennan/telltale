@@ -384,3 +384,27 @@ def test_recorder_keeps_the_pre_clip_norm():
     )
     b = plain.arrays()
     np.testing.assert_array_equal(b["norm"], b["norm_preclip"])
+
+
+def test_peer_relative_ignores_what_the_whole_fleet_does_together():
+    """A norm that falls for every client (as under clipping) must not look
+    like a change in any one client; a client far from its peers must."""
+    from telltale.baselines import peer_relative
+
+    rng = np.random.default_rng(0)
+    base = rng.uniform(0.8, 1.2, size=(12, 5))
+    fall = np.linspace(2.0, 0.5, 12)[:, None]
+    np.testing.assert_allclose(peer_relative(base * fall), peer_relative(base))
+    x = np.ones((4, 5))
+    x[:, 2] = 2.0
+    assert np.allclose(peer_relative(x)[:, 2], 2.0)
+    assert np.allclose(peer_relative(x)[:, 0], 1.0)
+
+
+def test_peer_relative_leaves_missing_rounds_missing():
+    from telltale.baselines import peer_relative
+
+    x = np.ones((3, 4))
+    x[1, :] = np.nan
+    out = peer_relative(x)
+    assert np.isnan(out[1]).all() and np.allclose(out[[0, 2]], 1.0)

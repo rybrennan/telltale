@@ -1,20 +1,20 @@
 \begin{table}[t]
 \centering
-\small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{lcccccc}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccccc}
 \toprule
-Cell & Samples & Probes & Update norm & Pre-clip norm & LOO update & FedRR \\
+Cell & Samples & Probes & Update norm & Pre-clip norm & Peer norm$^\dagger$ & LOO update & FedRR \\
 \midrule
-Main grid & 3,711 & 18 (16) & 24 (24) & -- & 6 (6) & 0 (0) \\
-Partition 1 & 5,150 & 18 (15) & 21 (20) & -- & 9 (6) & 2 (2) \\
-Partition 2 & 3,133 & 11 (8) & 21 (21) & -- & 7 (7) & 1 (1) \\
-Partition 3 & 9,454 & 11 (9) & 6 (6) & -- & 7 (6) & 7 (7) \\
-Onset 10 & 3,711 & 18 (18) & 24 (24) & -- & 0 (0) & 0 (0) \\
-Onset 22 & 3,711 & 16 (13) & 18 (18) & -- & 2 (1) & 0 (0) \\
-Clipped at 0.5 & 3,711 & 13 (11) & 0 (0) & 6 (6) & 6 (6) & 16 (16) \\
+Main grid & 3,711 & 18 (16) & 24 (24) & -- & 24 (24) & 6 (6) & 0 (0) \\
+Partition 1 & 5,150 & 18 (15) & 21 (20) & -- & 19 (19) & 9 (6) & 2 (2) \\
+Partition 2 & 3,133 & 11 (8) & 21 (21) & -- & 14 (14) & 7 (7) & 1 (1) \\
+Partition 3 & 9,454 & 11 (9) & 6 (6) & -- & 7 (7) & 7 (6) & 7 (7) \\
+Onset 10 & 3,711 & 18 (18) & 24 (24) & -- & 24 (24) & 0 (0) & 0 (0) \\
+Onset 22 & 3,711 & 16 (13) & 18 (18) & -- & 17 (17) & 2 (1) & 0 (0) \\
+Clipped at 0.5 & 3,711 & 13 (11) & 0 (0) & 6 (6) & 20 (19) & 6 (6) & 16 (16) \\
 \bottomrule
 \end{tabular}
-\caption{Robustness cells at $\alpha = 0.5$: the mid-severity fault of each kind on client 2, six seeds, 24 fault runs per cell, thresholds from five healthy runs of the same cell with the sixth held out (as in Table~\ref{tab:pooled}). Entries: fault runs caught, and in parentheses caught under the strict rule. Samples: client 2's training set in that partition. Main grid: partition 0, onset at round 15, no clipping. Pre-clip norm: the norm of the update the client trained, before clipping, as a client could report it; it equals the update norm when nothing is clipped. Every cell's held-out false-alarm rate is at most 0.6 percent per client per round, and one held-out healthy run in six alarms by construction, except the pre-clip norm, whose CUSUM stayed at zero in every healthy run (threshold zero, no held-out alarm).}
+\caption{Robustness cells at $\alpha = 0.5$: the mid-severity fault of each kind on client 2, six seeds, 24 fault runs per cell, thresholds from five healthy runs of the same cell with the sixth held out (as in Table~\ref{tab:pooled}). Entries: fault runs caught, and in parentheses caught under the strict rule. Samples: client 2's training set in that partition. Main grid: partition 0, onset at round 15, no clipping. Pre-clip norm: the norm of the update the client trained, before clipping, as a client could report it; it equals the update norm when nothing is clipped. $^\dagger$Peer norm, added after the fact (post hoc): that reported norm divided by the median of the other clients' norms that round, under the same CUSUM and five-run protocol; it cancels a trend common to the whole fleet. Under clipping the fleet's pre-clip norm falls from 1.19 (round 5) to 0.65 (round 14), so the plain pre-clip norm is scored against a falling reference and its CUSUM stays at zero in every healthy run (threshold zero, no held-out alarm). Every other cell's held-out false-alarm rate is at most 1.0 percent per client per round, and one held-out healthy run in six alarms by construction.}
 \label{tab:robust}
 \end{table}

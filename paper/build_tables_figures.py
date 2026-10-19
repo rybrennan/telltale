@@ -663,6 +663,7 @@ ROBUST_STATS = [
     ("level_cusum", "Probes"),
     ("update_norm_cusum", "Update norm"),
     ("update_preclip_cusum", "Pre-clip norm"),
+    ("update_peer_norm_cusum", "Peer norm$^\\dagger$"),
     ("update_loo_cusum", "LOO update"),
     ("fedrr", "FedRR"),
 ]
@@ -691,8 +692,8 @@ def table_robust(repo: Path) -> str:
     lines = [
         "\\begin{table}[t]",
         "\\centering",
-        "\\small",
-        "\\setlength{\\tabcolsep}{4pt}",
+        "\\footnotesize",
+        "\\setlength{\\tabcolsep}{3pt}",
         "\\begin{tabular}{lc" + "c" * len(ROBUST_STATS) + "}",
         "\\toprule",
         "Cell & Samples & " + " & ".join(n for _, n in ROBUST_STATS) + " \\\\",
@@ -732,10 +733,16 @@ def table_robust(repo: Path) -> str:
         "round 15, no clipping. Pre-clip norm: the norm of the "
         "update the client trained, before clipping, as a client could "
         "report it; it equals the update norm when nothing is clipped. "
-        "Every cell's held-out false-alarm rate is at most 0.6 percent per "
-        "client per round, and one held-out healthy run in six alarms by "
-        "construction, except the pre-clip norm, whose CUSUM stayed at zero "
-        "in every healthy run (threshold zero, no held-out alarm).}",
+        "$^\\dagger$Peer norm, added after the fact (post hoc): that "
+        "reported norm divided by the median of the other clients' norms "
+        "that round, under the same CUSUM and five-run protocol; it cancels "
+        "a trend common to the whole fleet. Under clipping the fleet's "
+        "pre-clip norm falls from 1.19 (round 5) to 0.65 (round 14), so the "
+        "plain pre-clip norm is scored against a falling reference and its "
+        "CUSUM stays at zero in every healthy run (threshold zero, no "
+        "held-out alarm). Every other cell's held-out false-alarm rate is at "
+        "most 1.0 percent per client per round, and one held-out healthy run "
+        "in six alarms by construction.}",
         "\\label{tab:robust}",
         "\\end{table}",
     ]

@@ -48,6 +48,7 @@ STATS = (
     "update_norm_cusum",
     "update_loo_cusum",
     "update_preclip_cusum",
+    "update_peer_norm_cusum",
     "fedrr",
     "fedrr_steps",
 )
