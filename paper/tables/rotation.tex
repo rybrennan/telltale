@@ -1,0 +1,21 @@
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lcccccc}
+\toprule
+ & \multicolumn{2}{c}{$\alpha = 0.1$} & \multicolumn{2}{c}{$\alpha = 0.5$} & \multicolumn{2}{c}{$\alpha = 100$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Detector & Caught & FAR \% & Caught & FAR \% & Caught & FAR \% \\
+\midrule
+Probe CUSUM (method) & 17.5 (13--20) & 0.5 (0.0--1.1) & 35.5 (34--36) & 0.7 (0.0--2.9) & 48 (34--48) & 2.0 (0.0--3.3) \\
+Probe within-round $z$ & 8.5 (5--16) & 0.2 (0.0--1.5) & 11.5 (11--22) & 0.5 (0.0--1.7) & 37.5 (15--47) & 0.5 (0.0--1.2) \\
+Update norm CUSUM & 13 (8--23) & 0.7 (0.0--3.7) & 39 (39--39) & 1.6 (0.0--3.3) & 48 (48--48) & 0.6 (0.0--1.1) \\
+LOO update CUSUM & 0 (0--0) & 1.3 (0.0--3.7) & 27 (18--28) & 0.9 (0.0--1.2) & 46 (39--47) & 0.9 (0.0--1.5) \\
+FedRR, healthy max & 0 (0--1) & 0.5 (0.0--1.5) & 5 (0--15) & 0.6 (0.0--1.3) & 48 (45--48) & 2.3 (0.0--5.2) \\
+FedRR, step-normalised & 10 (0--20) & 0.9 (0.0--2.0) & 26.5 (10--36) & 0.6 (0.0--2.1) & 40 (30--47) & 1.4 (0.0--2.8) \\
+\bottomrule
+\end{tabular}
+\caption{Every detector with each of the six healthy seeds in turn as the calibration seed, the other five held out: median over the six choices, with the range in parentheses. Caught: mid-severity fault runs detected, of 48 per level (one fault of each kind at mid severity on clients 2, 5 and 9). FAR: held-out false alarms per client per round. At $\alpha = 0.1$ the update-space detectors are scored on client 2 only (24 runs), the one client with update records there. LOO: leave-one-out. With one healthy run setting the threshold, a held-out healthy run raised at least one alarm in 15 of 30 calibrate-one, hold-one pairs for every detector, as exchangeable runs imply (Section~\ref{sec:protocol}).}
+\label{tab:rotation}
+\end{table}

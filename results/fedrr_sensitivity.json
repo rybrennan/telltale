@@ -1,0 +1,258 @@
+{
+ "printed (d/2)": {
+  "allowance": 0.25,
+  "h": 6.0234375,
+  "native": [
+   {
+    "alpha": 0.1,
+    "stat": "fedrr",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.13,
+    "any_alarm": 0.7666666666666666,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 60,
+    "detected": 18,
+    "false_loc": 17.566666666666666
+   },
+   {
+    "alpha": 0.1,
+    "stat": "fedrr_steps",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.12666666666666668,
+    "any_alarm": 0.7555555555555555,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 60,
+    "detected": 60,
+    "false_loc": 7.716666666666667
+   },
+   {
+    "alpha": 0.5,
+    "stat": "fedrr",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.1322222222222222,
+    "any_alarm": 0.7888888888888889,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 84,
+    "detected": 57,
+    "false_loc": 15.071428571428571
+   },
+   {
+    "alpha": 0.5,
+    "stat": "fedrr_steps",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.14666666666666667,
+    "any_alarm": 0.7111111111111111,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 84,
+    "detected": 75,
+    "false_loc": 11.928571428571429
+   },
+   {
+    "alpha": 100.0,
+    "stat": "fedrr",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.034444444444444444,
+    "any_alarm": 0.26666666666666666,
+    "runs_any_alarm": 0.6666666666666666,
+    "fault_runs": 84,
+    "detected": 78,
+    "false_loc": 0.9761904761904762
+   },
+   {
+    "alpha": 100.0,
+    "stat": "fedrr_steps",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.08888888888888889,
+    "any_alarm": 0.5666666666666667,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 84,
+    "detected": 78,
+    "false_loc": 6.011904761904762
+   }
+  ],
+  "pooled5": [
+   {
+    "alpha": 0.1,
+    "stat": "fedrr",
+    "caught": 0,
+    "strict": 0,
+    "n": 24,
+    "node_round_far": 0.0011111111111111111
+   },
+   {
+    "alpha": 0.1,
+    "stat": "fedrr_steps",
+    "caught": 4,
+    "strict": 4,
+    "n": 24,
+    "node_round_far": 0.0022222222222222222
+   },
+   {
+    "alpha": 0.5,
+    "stat": "fedrr",
+    "caught": 0,
+    "strict": 0,
+    "n": 48,
+    "node_round_far": 0.0022222222222222222
+   },
+   {
+    "alpha": 0.5,
+    "stat": "fedrr_steps",
+    "caught": 11,
+    "strict": 11,
+    "n": 48,
+    "node_round_far": 0.0022222222222222222
+   },
+   {
+    "alpha": 100.0,
+    "stat": "fedrr",
+    "caught": 42,
+    "strict": 42,
+    "n": 48,
+    "node_round_far": 0.005555555555555556
+   },
+   {
+    "alpha": 100.0,
+    "stat": "fedrr_steps",
+    "caught": 29,
+    "strict": 29,
+    "n": 48,
+    "node_round_far": 0.0033333333333333335
+   }
+  ]
+ },
+ "used (d)": {
+  "allowance": 0.5,
+  "h": 3.859375,
+  "native": [
+   {
+    "alpha": 0.1,
+    "stat": "fedrr",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.13888888888888887,
+    "any_alarm": 0.8111111111111112,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 60,
+    "detected": 18,
+    "false_loc": 18.183333333333334
+   },
+   {
+    "alpha": 0.1,
+    "stat": "fedrr_steps",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.13333333333333333,
+    "any_alarm": 0.811111111111111,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 60,
+    "detected": 60,
+    "false_loc": 7.75
+   },
+   {
+    "alpha": 0.5,
+    "stat": "fedrr",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.1411111111111111,
+    "any_alarm": 0.8444444444444444,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 84,
+    "detected": 57,
+    "false_loc": 15.583333333333334
+   },
+   {
+    "alpha": 0.5,
+    "stat": "fedrr_steps",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.14444444444444446,
+    "any_alarm": 0.7666666666666666,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 84,
+    "detected": 75,
+    "false_loc": 10.547619047619047
+   },
+   {
+    "alpha": 100.0,
+    "stat": "fedrr",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.024444444444444446,
+    "any_alarm": 0.2333333333333333,
+    "runs_any_alarm": 0.5,
+    "fault_runs": 84,
+    "detected": 78,
+    "false_loc": 0.5476190476190477
+   },
+   {
+    "alpha": 100.0,
+    "stat": "fedrr_steps",
+    "dataset": "fashion_mnist",
+    "healthy_runs": 6,
+    "node_round_far": 0.08777777777777779,
+    "any_alarm": 0.6444444444444445,
+    "runs_any_alarm": 1.0,
+    "fault_runs": 84,
+    "detected": 78,
+    "false_loc": 5.238095238095238
+   }
+  ],
+  "pooled5": [
+   {
+    "alpha": 0.1,
+    "stat": "fedrr",
+    "caught": 0,
+    "strict": 0,
+    "n": 24,
+    "node_round_far": 0.0011111111111111111
+   },
+   {
+    "alpha": 0.1,
+    "stat": "fedrr_steps",
+    "caught": 4,
+    "strict": 4,
+    "n": 24,
+    "node_round_far": 0.0022222222222222222
+   },
+   {
+    "alpha": 0.5,
+    "stat": "fedrr",
+    "caught": 0,
+    "strict": 0,
+    "n": 48,
+    "node_round_far": 0.0022222222222222222
+   },
+   {
+    "alpha": 0.5,
+    "stat": "fedrr_steps",
+    "caught": 11,
+    "strict": 11,
+    "n": 48,
+    "node_round_far": 0.0022222222222222222
+   },
+   {
+    "alpha": 100.0,
+    "stat": "fedrr",
+    "caught": 46,
+    "strict": 46,
+    "n": 48,
+    "node_round_far": 0.006666666666666667
+   },
+   {
+    "alpha": 100.0,
+    "stat": "fedrr_steps",
+    "caught": 30,
+    "strict": 30,
+    "n": 48,
+    "node_round_far": 0.0033333333333333335
+   }
+  ]
+ }
+}

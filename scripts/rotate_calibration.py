@@ -35,6 +35,7 @@ STATS = (
     "update_norm_cusum",
     "update_loo_cusum",
     "fedrr",
+    "fedrr_steps",
 )
 
 
@@ -44,7 +45,11 @@ def rotate(results: Path) -> list[dict]:
     families: dict = {}
     for f in sorted(results.glob("probes_*.json")):
         d, probs, upd = sf.load(f.stem)
-        if d["config"]["dataset"] != "fashion_mnist" or d.get("contact"):
+        if (
+            d["config"]["dataset"] != "fashion_mnist"
+            or d.get("contact")
+            or not sf.in_main_grid(d)
+        ):
             continue
         families.setdefault(sf.family(d), {})[d["config"]["train_seed"]] = (
             d,
@@ -57,6 +62,7 @@ def rotate(results: Path) -> list[dict]:
         if (
             d["config"]["dataset"] != "fashion_mnist"
             or d.get("contact")
+            or not sf.in_main_grid(d)
             or spec["ramp"] != 10
             or MID.get(spec["kind"]) != spec["severity"]
         ):

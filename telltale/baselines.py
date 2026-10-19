@@ -18,10 +18,15 @@ Recorded by `UpdateStatsMonitor` (an `update_hook`):
 
 Scored by `fedrr_cusum`: FedRR's monitoring statistic. Each round the clients
 are ranked by the signal, the rank is mapped to a standard normal with a
-uniform jitter, and a one-sided CUSUM with reference value d runs per client
-from the first monitored round. `fedrr_threshold` is FedRR's own control
-limit: the H that gives a target in-control average run length under random
-ranks (their Appendix B), which is exact only when clients are exchangeable.
+uniform jitter, and a one-sided CUSUM with allowance d runs per client from
+the first monitored round. The paper prints the update as S + Z - d/2, but
+its own control limits (K = 5, ARL0 = 30: H = 3.84, 3.28, 2.77 for d = 0.4,
+0.5, 0.6) give an in-control ARL near 30 only when the full d is subtracted
+(about 11 with d/2), so the full d is used here, matching the chart its
+authors ran; tests/test_baselines.py checks this against their limits.
+`fedrr_threshold` is FedRR's own control limit: the H that gives a target
+in-control average run length under random ranks (their Appendix B), which
+is exact only when clients are exchangeable.
 
 Choices that the paper leaves open are fixed here and stated:
     The subspace is fitted to rounds 1-14 (every pre-onset round except round
@@ -142,6 +147,7 @@ class UpdateStatsMonitor:
         """
         shape = (n_rounds, n_clients)
         self.norm = np.full(shape, np.nan)
+        self.norm_preclip = np.full(shape, np.nan)
         self.loo_dist = np.full(shape, np.nan)
         self.resid = np.full(shape, np.nan)
         self.fit_rounds = fit_rounds
@@ -161,7 +167,7 @@ class UpdateStatsMonitor:
             updates: Client updates returned this round.
             round_idx: Index of the current round.
         """
-        deltas = [flatten(u.state) - self._global for u in updates]
+        deltas = [flatten(u.sent) - self._global for u in updates]
         weights = np.array([u.n_samples for u in updates], dtype=float)
         total = torch.stack(
             [d * w for d, w in zip(deltas, weights, strict=True)]
@@ -169,6 +175,16 @@ class UpdateStatsMonitor:
         for i, (u, d) in enumerate(zip(updates, deltas, strict=True)):
             k = u.client_id
             self.norm[round_idx, k] = float(torch.linalg.vector_norm(d))
+            # What the client trained, before any clipping. Equal to `norm`
+            # unless the run clips; a monitor that the client reports to
+            # could see this even when the server only sees `sent`.
+            self.norm_preclip[round_idx, k] = (
+                self.norm[round_idx, k]
+                if u.sent_state is None
+                else float(
+                    torch.linalg.vector_norm(flatten(u.state) - self._global)
+                )
+            )
             if len(updates) > 1:
                 others = (total - d * weights[i]) / (weights.sum() - weights[i])
                 cos = torch.nn.functional.cosine_similarity(d, others, dim=0)
@@ -189,11 +205,13 @@ class UpdateStatsMonitor:
         """Return the recorded signals and the subspace's size.
 
         Returns:
-            Dict of (round, client) arrays `norm`, `loo_dist`, `resid`, plus
+            Dict of (round, client) arrays `norm`, `norm_preclip`,
+            `loo_dist`, `resid`, plus
             `q`, `held` and `fit_rounds` as arrays for an .npz file.
         """
         return {
             "norm": self.norm,
+            "norm_preclip": self.norm_preclip,
             "loo_dist": self.loo_dist,
             "resid": self.resid,
             "q": np.array(-1 if self.q is None else self.q),
@@ -258,7 +276,8 @@ def fedrr_cusum(
 ) -> np.ndarray:
     """FedRR's per-client CUSUM of rank-normal scores.
 
-    S_t = max(0, S_{t-1} + Z_t - d/2), from round `start` on. A client absent
+    S_t = max(0, S_{t-1} + Z_t - d), from round `start` on (the module
+    docstring explains why the full d). A client absent
     in a round neither adds nor decays.
 
     Args:
@@ -277,7 +296,7 @@ def fedrr_cusum(
     for r in range(start, R):
         z = rank_scores(signal[r], rng)
         seen = ~np.isnan(z)
-        s[seen] = np.maximum(0.0, s[seen] + z[seen] - d / 2)
+        s[seen] = np.maximum(0.0, s[seen] + z[seen] - d)
         out[r, seen] = s[seen]
     return out
 
@@ -315,7 +334,7 @@ def in_control_arl(
             t += 1
             ranks = rng.permutation(base)
             z = _normal.ppf((ranks - rng.uniform(size=n_clients)) / n_clients)
-            s = np.maximum(0.0, s + z - d / 2)
+            s = np.maximum(0.0, s + z - d)
             if s.max() > h:
                 break
         lengths.append(t)

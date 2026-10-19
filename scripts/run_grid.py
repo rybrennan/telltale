@@ -23,6 +23,15 @@ bit against the stored file, and only the sidecar is written:
     nohup python scripts/run_grid.py --update-stats --seeds 0,1,2,3,4,5 \
         --jobs 3 > grid6.log 2>&1 &
 
+Review-4 cells (one healthy run per seed plus the mid severity of each kind):
+
+    python scripts/run_grid.py --update-stats --mid-only --alphas 0.5 \
+        --partition-seed 1 --tag-prefix p1-          # another partition
+    python scripts/run_grid.py --update-stats --mid-only --alphas 0.5 \
+        --onset 22 --tag-prefix on22-                # later onset
+    python scripts/run_grid.py --update-stats --mid-only --alphas 0.5 \
+        --clip-norm 0.5 --tag-prefix clip-           # DP-style clipping
+
 --jobs runs that many runs at once. Each process keeps torch's default thread
 count, so results do not depend on it (checked by the bitwise comparison).
 """
@@ -72,6 +81,10 @@ def plan(
     tag_prefix: str = "",
     seeds: list[int] = SEEDS,
     alphas: list[float] | None = None,
+    partition_seed: int = 0,
+    clip_norm: float | None = None,
+    onset: int = ONSET,
+    mid_only: bool = False,
 ) -> list[tuple[str, list[str]]]:
     """List every run in the grid.
 
@@ -82,6 +95,10 @@ def plan(
         tag_prefix: Prefix that keeps a second modality's files distinct.
         seeds: Train seeds; the lowest calibrates, the rest are held out.
         alphas: Heterogeneity levels to include; None means all of ALPHAS.
+        partition_seed: Seed of the Dirichlet split across clients.
+        clip_norm: If set, sent updates are clipped to this L2 norm.
+        onset: Round the fault ramp starts.
+        mid_only: Keep only the middle severity of each ladder.
 
     Returns:
         (expected result stem, argv) for every run, healthy run first per
@@ -100,6 +117,8 @@ def plan(
                 train_seed=seed,
                 dataset=dataset,
                 local_epochs=local_epochs,
+                partition_seed=partition_seed,
+                clip_norm=clip_norm,
             )
             base = [
                 "--alpha",
@@ -112,17 +131,21 @@ def plan(
                 dataset,
                 "--local-epochs",
                 str(local_epochs),
+                "--partition-seed",
+                str(partition_seed),
             ]
+            if clip_norm is not None:
+                base += ["--clip-norm", str(clip_norm)]
             runs.append(
                 (f"probes_{tag}_{cfg.fingerprint()}_{pcfg.fingerprint()}", base)
             )
             for kind, sevs in LADDER.items():
-                points = [(NODE, sev) for sev in sevs]
+                mid = sevs[len(sevs) // 2]
+                points = [(NODE, sev) for sev in ([mid] if mid_only else sevs)]
                 if extra_nodes:
-                    mid = sevs[len(sevs) // 2]
                     points += [(n, mid) for n in EXTRA_NODES]
                 for node, sev in points:
-                    spec = FaultSpec(kind, node, ONSET, sev, RAMP)
+                    spec = FaultSpec(kind, node, onset, sev, RAMP)
                     stem = (
                         f"fault_{tag}_{cfg.fingerprint()}_"
                         f"{pcfg.fingerprint()}_{spec.fingerprint()}"
@@ -137,7 +160,7 @@ def plan(
                                 "--node",
                                 str(node),
                                 "--onset",
-                                str(ONSET),
+                                str(onset),
                                 "--ramp",
                                 str(RAMP),
                                 "--severity",
@@ -186,6 +209,14 @@ def main() -> int:
         default=None,
         help="comma-separated heterogeneity levels, e.g. 0.5,100 (default all)",
     )
+    p.add_argument("--partition-seed", type=int, default=0)
+    p.add_argument("--clip-norm", type=float, default=None)
+    p.add_argument("--onset", type=int, default=ONSET)
+    p.add_argument(
+        "--mid-only",
+        action="store_true",
+        help="only the middle severity of each fault ladder",
+    )
     args = p.parse_args()
     seeds = [int(s) for s in args.seeds.split(",")]
 
@@ -198,6 +229,10 @@ def main() -> int:
         alphas=None
         if args.alphas is None
         else [float(a) for a in args.alphas.split(",")],
+        partition_seed=args.partition_seed,
+        clip_norm=args.clip_norm,
+        onset=args.onset,
+        mid_only=args.mid_only,
     )
     suffix = ".updates.npz" if args.update_stats else ".json"
     extra = ["--update-stats"] if args.update_stats else []

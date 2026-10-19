@@ -57,7 +57,7 @@ from seeds, runs on a laptop CPU, ships as a container (`Dockerfile`).
 - Where it fails: gain drift; severe heterogeneity, where detection depends on which node is
   faulted; intervals from three seeds.
 
-**The preprint.** The paper's tables and figures regenerate from the tracked result files at commit `ada3aac` (`scripts/score_faults.py`, then `scripts/rotate_calibration.py`); a clean clone of that commit reproduces them byte for byte.
+**The preprint.** The paper's tables and figures regenerate from the tracked result files at the commit tagged `preprint-v1` (named in the paper): `scripts/score_faults.py`, `scripts/rotate_calibration.py` and `scripts/review4_scores.py` score the runs, then `paper/build_tables_figures.py` writes every table and figure. The partition, onset and clipping cells (`run_grid.py --partition-seed`, `--onset`, `--clip-norm`) are scored by `review4_scores.py` and excluded from the main-grid scripts. `scripts/fedrr_sensitivity.py` compares FedRR's CUSUM allowance as printed in its paper (d/2) with the one used here (d). A clean clone of that commit reproduces the tables byte for byte.
 
 **Reproduce.** `scripts/reproduce.sh` runs everything in order and prices each step first;
 `scripts/score_faults.py` and `scripts/make_figures.py` regenerate every table and figure from
@@ -386,7 +386,7 @@ are entangled here. The grid varies the node.
 | bias ramp | 0.5 | 0.8879 | miss | miss | ttd 5 | ramp caught at 30% of final severity |
 | bias ramp | 1.0 | 0.8880 | miss | miss | ttd 2 | |
 | bias ramp | 2.0 | 0.8882 | miss | miss | ttd 0 | |
-| label-noise ramp | 0.3 | 0.8881 | **ttd 4** | miss | ttd 4 (2 false loc.) | persistence localises cleanly; CUSUM also flags two healthy nodes |
+| label-noise ramp | 0.3 | 0.8881 | **ttd 4** | miss | ttd 4 (2 false loc.) | persistence localises cleanly; CUSUM also flags healthy nodes in two node-rounds |
 | blur ramp | σ = 1.0 px | 0.8881 | miss | miss | ttd 9 | caught only once the ramp completes |
 | gain ramp | 0.5 | 0.8892 | miss | miss | miss | the node's divergence *fell* (0.028 → 0.018); a one-sided CUSUM cannot see a decrease, and the node was barely hurt (probe acc 0.873 → 0.869) |
 
@@ -442,13 +442,13 @@ Three statements, each with its limit:
 
 1. **Label corruption is detected and localised at every heterogeneity level**, 3 of 3 seeds
    at 30% and 50% corruption, by the persistence statistic, three to four rounds after onset,
-   with at most two healthy nodes mis-flagged per run. This is the stage-2 design working as
+   with at most two healthy node-rounds flagged per run. This is the stage-2 design working as
    designed. Limit: at 10% corruption it drops to 0–0.33 under skew.
 2. **Slow input drift is detected under skew only by CUSUM, except bias under severe skew.**
    Blur ≥ 1 px is caught in 3 of 3 seeds at moderate and severe skew, and bias 0.5 in 3 of 3
    at moderate skew, four to seven rounds after onset, where persistence and the cross-node
    statistics miss. Bias 0.5 under severe skew is caught in 0 of 3 (table above). Limit: CUSUM's false localisation on
-   *label* faults is severe (8–29 healthy nodes flagged per run) because corrupted labels move
+   *label* faults is severe (8–29 healthy node-rounds flagged per run) because corrupted labels move
    every node's level once aggregated. CUSUM detects; persistence localises.
 3. **Gain is the failure case.** Under severe skew nothing sees it at any severity; under
    moderate skew the best Pd is 0.67 with chance at 0.17–0.20 and three seeds, which is not a
@@ -619,7 +619,10 @@ detected and localised at every heterogeneity level three to four rounds after o
 blur drift is detected under moderate and severe skew, and slow bias drift under moderate skew,
 by CUSUM alone, four to seven rounds after onset; slow bias under severe skew is missed;
 gain drift is not reliably detected; the fleet accuracy metric hid all ninety faults; false
-alarms are 0–2.0% of node-rounds at the healthy-maximum threshold. It does not claim a
+alarms are 0–2.0% of node-rounds at the healthy-maximum threshold. Per run, that threshold
+is not low: when one healthy run sets it, a held-out healthy run of the same configuration
+exceeds it somewhere about half the time, by construction, whatever the statistic (with the
+maximum over five healthy runs, about one time in six; `scripts/review4_scores.py`). It does not claim a
 detection probability tighter than the intervals shown, anything about node weight, anything
 about a submarine beyond one seed, or anything about sonar.
 

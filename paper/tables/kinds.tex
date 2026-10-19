@@ -1,0 +1,19 @@
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccccccc}
+\toprule
+ & \multicolumn{3}{c}{$\alpha = 0.1$} & \multicolumn{3}{c}{$\alpha = 0.5$} & \multicolumn{3}{c}{$\alpha = 100$} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+Fault (top severity) & CUSUM & TTD & Persist. & CUSUM & TTD & Persist. & CUSUM & TTD & Persist. \\
+\midrule
+label noise 0.5 & 6/6 & 6 & 6/6 & 6/6 & 1 & 6/6 & 6/6 & 3 & 6/6 \\
+blur (px) 1.5 & 6/6 & 4.5 & 1/6 & 6/6 & 4 & 4/6 & 6/6 & 9.5 & 6/6 \\
+gain 1 & 0/6 & -- & 0/6 & 5/6 & 9 & 4/6 & 6/6 & 7.5 & 6/6 \\
+bias (SD) 0.5 & 1/6 & 0 & 1/6 & 6/6 & 3.5 & 1/6 & 6/6 & 11 & 3/6 \\
+\bottomrule
+\end{tabular}
+\caption{Detection of the highest severity of each fault kind on client 2, six seeds, thresholds at the healthy maximum of seed 0. CUSUM and persistence: seeds detected; TTD: median rounds from onset to the first CUSUM flag. The one bias detection at $\alpha = 0.1$ flagged in the onset round (TTD 0: flagged in the onset round itself) and is more likely a chance alarm than a detection. Wilson 95\% intervals for $k$ of 6: 0: [0.00, 0.39]; 1: [0.03, 0.56]; 2: [0.10, 0.70]; 3: [0.19, 0.81]; 4: [0.30, 0.90]; 5: [0.44, 0.97]; 6: [0.61, 1.00]. The full grid is in Appendix~\ref{app:grid}.}
+\label{tab:kinds}
+\end{table}

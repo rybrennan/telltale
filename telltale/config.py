@@ -70,6 +70,14 @@ class FedConfig:
     init_seed: int = 0
     train_seed: int = 0
 
+    # ── differential-privacy-style clipping ───────────────────────────────
+    clip_norm: float | None = None
+    """If set, each client's update (its trained state minus the global
+    model) is scaled down to at most this L2 norm before it is sent, as in
+    DP-FedAvg. The client's local model, which scores the probe battery, is
+    not clipped. None (the default) leaves updates untouched and is omitted
+    from `to_dict`, so every earlier configuration keeps its fingerprint."""
+
     # ── execution ─────────────────────────────────────────────────────────
     device: str = "cpu"
     eval_batch_size: int = 512
@@ -96,6 +104,8 @@ class FedConfig:
             raise ValueError("dirichlet_alpha must be > 0")
         if self.rounds < 1:
             raise ValueError("rounds must be >= 1")
+        if self.clip_norm is not None and self.clip_norm <= 0:
+            raise ValueError("clip_norm must be > 0 when set")
 
     @property
     def clients_per_round(self) -> int:
@@ -109,9 +119,14 @@ class FedConfig:
         """Plain-dict form; the input to `fingerprint`.
 
         Returns:
-            Every field of the config as a plain dict.
+            Every field of the config as a plain dict. `clip_norm` is left
+            out when unset, so configurations from before it existed hash to
+            the same fingerprint.
         """
-        return asdict(self)
+        d = asdict(self)
+        if d["clip_norm"] is None:
+            del d["clip_norm"]
+        return d
 
     def fingerprint(self) -> str:
         """Stable short hash of the full config.

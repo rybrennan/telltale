@@ -1,0 +1,20 @@
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{llcccc}
+\toprule
+Skew & Allowance & $H$ & Healthy runs alarmed & Caught at $H$ & Caught, five-run threshold \\
+\midrule
+$\alpha = 0.1$ & printed, $d/2$ & 6.02 & 6 of 6 (13.0\%) & 18 of 60 & 0 (0) of 24 \\
+ & used, $d$ & 3.86 & 6 of 6 (13.9\%) & 18 of 60 & 0 (0) of 24 \\
+\addlinespace
+$\alpha = 0.5$ & printed, $d/2$ & 6.02 & 6 of 6 (13.2\%) & 57 of 84 & 0 (0) of 48 \\
+ & used, $d$ & 3.86 & 6 of 6 (14.1\%) & 57 of 84 & 0 (0) of 48 \\
+\addlinespace
+$\alpha = 100$ & printed, $d/2$ & 6.02 & 4 of 6 (3.4\%) & 78 of 84 & 42 (42) of 48 \\
+ & used, $d$ & 3.86 & 3 of 6 (2.4\%) & 78 of 84 & 46 (46) of 48 \\
+\bottomrule
+\end{tabular}
+\caption{FedRR with the CUSUM allowance as printed in its paper ($d/2 = 0.25$) and as used here ($d = 0.5$), on the same runs. $H$: the control limit giving an in-control average run length of 30 for ten clients under that allowance. Healthy runs alarmed, of six, with the false-alarm rate per client per round in parentheses; caught at $H$: every fault run FedRR could be scored on (all severities); caught at the five-run threshold: mid-severity runs, with the strict count in parentheses (24 at $\alpha = 0.1$). The allowance changes no detection count at its own limit and, under skew, none at the empirical threshold; near-IID at the empirical threshold it moves FedRR from 42 to 46 of 48.}
+\label{tab:fedrr-allowance}
+\end{table}

@@ -1,0 +1,33 @@
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llccccc}
+\toprule
+Skew & Detector & Caught & Strict & TTD & FAR \% & Wrong clients \\
+\midrule
+$\alpha = 0.1$ & Probe CUSUM (method) & 14/48 & 12/48 & 8 & 0.1 & 0.15 \\
+ & Probe within-round $z$ & 5/48 & 4/48 & 5 & 0.1 & 0.73 \\
+ & Update norm CUSUM & 8/24 & 7/24 & 2 & 0.1 & 0.17 \\
+ & LOO update CUSUM & 0/24 & 0/24 & -- & 0.4 & 0.42 \\
+ & FedRR, healthy max & 0/24 & 0/24 & -- & 0.1 & 0.12 \\
+ & FedRR, step-normalised & 4/24 & 4/24 & 13 & 0.2 & 0.00 \\
+\addlinespace
+$\alpha = 0.5$ & Probe CUSUM (method) & 35/48 & 29/48 & 5 & 0.1 & 0.65 \\
+ & Probe within-round $z$ & 11/48 & 7/48 & 8 & 0.1 & 0.17 \\
+ & Update norm CUSUM & 39/48 & 39/48 & 5 & 0.1 & 0.15 \\
+ & LOO update CUSUM & 18/48 & 18/48 & 11 & 0.3 & 0.21 \\
+ & FedRR, healthy max & 0/48 & 0/48 & -- & 0.2 & 0.06 \\
+ & FedRR, step-normalised & 11/48 & 11/48 & 13 & 0.2 & 0.00 \\
+\addlinespace
+$\alpha = 100$ & Probe CUSUM (method) & 39/48 & 28/48 & 9 & 1.2 & 0.92 \\
+ & Probe within-round $z$ & 16/48 & 13/48 & 8 & 0.1 & 0.08 \\
+ & Update norm CUSUM & 48/48 & 48/48 & 4.5 & 0.1 & 0.33 \\
+ & LOO update CUSUM & 39/48 & 35/48 & 13 & 0.1 & 0.73 \\
+ & FedRR, healthy max & 46/48 & 46/48 & 9 & 0.7 & 0.02 \\
+ & FedRR, step-normalised & 30/48 & 30/48 & 11.5 & 0.3 & 0.00 \\
+\bottomrule
+\end{tabular}
+\caption{The main result. Each healthy seed is held out in turn and the threshold is the largest healthy value after burn-in over the other five; a fault run is scored only with the threshold whose calibration runs exclude its own seed. Caught: mid-severity fault runs with the faulted client flagged after onset, of 48 per level (24 for the update-space detectors at $\alpha = 0.1$, client 2 only). Strict: caught with no healthy client flagged at or before the detection round. TTD: median rounds from onset to the first flag on the faulted client. FAR: held-out false alarms per client per round. Wrong clients: mean number of healthy clients flagged at least once per fault run. Under this protocol exactly one of the six held-out healthy runs raised an alarm for every detector at every level, the 1 in 6 that exchangeable runs imply (Section~\ref{sec:protocol}).}
+\label{tab:pooled}
+\end{table}

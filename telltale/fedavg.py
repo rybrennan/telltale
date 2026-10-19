@@ -85,6 +85,14 @@ class ClientUpdate:
     n_samples: int
     train_loss: float
     state: StateDict = field(repr=False)
+    sent_state: StateDict | None = field(default=None, repr=False)
+    """What the client sends for aggregation when it differs from `state`
+    (a clipped update). None means it sends `state` itself."""
+
+    @property
+    def sent(self) -> StateDict:
+        """The state the server aggregates."""
+        return self.state if self.sent_state is None else self.sent_state
 
 
 @dataclass
@@ -249,7 +257,7 @@ def aggregate(updates: Iterable[ClientUpdate]) -> StateDict:
         raise ValueError("client sample counts sum to zero")
 
     out: StateDict = {}
-    for key, ref in updates[0].state.items():
+    for key, ref in updates[0].sent.items():
         if not torch.is_floating_point(ref):
             # Integer buffers (none in SmallCNN, but guard the general case):
             # averaging them is meaningless, so carry the first client's value.
@@ -257,7 +265,7 @@ def aggregate(updates: Iterable[ClientUpdate]) -> StateDict:
             continue
         acc = torch.zeros_like(ref, dtype=torch.float64)
         for u in updates:
-            acc += u.state[key].to(torch.float64) * (u.n_samples / total)
+            acc += u.sent[key].to(torch.float64) * (u.n_samples / total)
         out[key] = acc.to(ref.dtype)
     return out
 
@@ -293,6 +301,44 @@ def evaluate(
 
 
 # ── the loop ──────────────────────────────────────────────────────────────────
+
+
+def clip_update(
+    state: StateDict, global_state: StateDict, clip_norm: float
+) -> StateDict:
+    """Scale a client's update down to at most `clip_norm` in L2 norm.
+
+    The update is `state - global_state` over floating-point tensors; it is
+    multiplied by min(1, clip_norm / ||update||) and added back to the global
+    state, as DP-FedAvg does before aggregation. Integer buffers are copied.
+
+    Args:
+        state: The client's trained state.
+        global_state: The global state it trained from.
+        clip_norm: Largest L2 norm the sent update may have.
+
+    Returns:
+        The state the client sends.
+    """
+    keys = [k for k, v in state.items() if torch.is_floating_point(v)]
+    sq = sum(
+        float(((state[k].double() - global_state[k].double()) ** 2).sum())
+        for k in keys
+    )
+    norm = sq**0.5
+    if norm <= clip_norm:
+        return {k: v.clone() for k, v in state.items()}
+    scale = clip_norm / norm
+    out: StateDict = {}
+    for k, v in state.items():
+        if k in keys:
+            g = global_state[k]
+            out[k] = (g.double() + (v.double() - g.double()) * scale).to(
+                v.dtype
+            )
+        else:
+            out[k] = v.clone()
+    return out
 
 
 def _select_participants(
@@ -451,6 +497,10 @@ def run_federated(
             )
             for cid in participants
         ]
+
+        if cfg.clip_norm is not None:
+            for u in updates:
+                u.sent_state = clip_update(u.state, global_state, cfg.clip_norm)
 
         if update_hook is not None:
             update_hook(updates, rnd)
