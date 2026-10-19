@@ -659,6 +659,88 @@ def table_pooled(repo: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
+ROBUST_STATS = [
+    ("level_cusum", "Probes"),
+    ("update_norm_cusum", "Update norm"),
+    ("update_preclip_cusum", "Pre-clip norm"),
+    ("update_loo_cusum", "LOO update"),
+    ("fedrr", "FedRR"),
+]
+
+
+def table_robust(repo: Path) -> str:
+    """Partition, onset and clipping cells: client 2, mid severity, alpha 0.5."""
+    res = repo / "results"
+    cells = [
+        ("review4_scores.json", 0, None, "Main grid"),
+        ("review4_scores.json", 1, None, "Partition 1"),
+        ("review4_scores.json", 2, None, "Partition 2"),
+        ("review4_scores.json", 3, None, "Partition 3"),
+        ("review4_scores_onset10.json", 0, None, "Onset 10"),
+        ("review4_scores_onset22.json", 0, None, "Onset 22"),
+        ("review4_scores.json", 0, 0.5, "Clipped at 0.5"),
+    ]
+    sizes = {}
+    for f in sorted(res.glob("probes_*baseline_*.json")):
+        d = json.loads(f.read_text())
+        c = d["config"]
+        if c["dirichlet_alpha"] == 0.5 and c["dataset"] == "fashion_mnist":
+            sizes[c["partition_seed"]] = d["partition_summary"]["client_sizes"][
+                2
+            ]
+    lines = [
+        "\\begin{table}[t]",
+        "\\centering",
+        "\\small",
+        "\\setlength{\\tabcolsep}{4pt}",
+        "\\begin{tabular}{lc" + "c" * len(ROBUST_STATS) + "}",
+        "\\toprule",
+        "Cell & Samples & " + " & ".join(n for _, n in ROBUST_STATS) + " \\\\",
+        "\\midrule",
+    ]
+    for fname, part, clip, label in cells:
+        rows = {
+            r["stat"]: r
+            for r in json.loads((res / fname).read_text())
+            if r["protocol"] == "pooled5"
+            and r["alpha"] == 0.5
+            and r.get("partition_seed", 0) == part
+            and r.get("clip_norm") == clip
+        }
+        out = []
+        for stat, _ in ROBUST_STATS:
+            r = rows.get(stat)
+            if r is None or (stat == "update_preclip_cusum" and clip is None):
+                out.append("--")
+                continue
+            m = r["mid_client2"]
+            out.append(f"{m['detected']} ({m['strict']})")
+        lines.append(
+            f"{label} & {sizes.get(part, '--'):,} & "
+            + " & ".join(out)
+            + " \\\\"
+        )
+    lines += [
+        "\\bottomrule",
+        "\\end{tabular}",
+        "\\caption{Robustness cells at $\\alpha = 0.5$: the mid-severity "
+        "fault of each kind on client 2, six seeds, 24 fault runs per cell, "
+        "thresholds from five healthy runs of the same cell with the sixth "
+        "held out (as in Table~\\ref{tab:pooled}). Entries: fault runs caught, "
+        "and in parentheses caught under the strict rule. Samples: client 2's "
+        "training set in that partition. Main grid: partition 0, onset at "
+        "round 15, no clipping. Pre-clip norm: the norm of the "
+        "update the client trained, before clipping, as a client could "
+        "report it; it equals the update norm when nothing is clipped. "
+        "Every cell's held-out false-alarm rate is at most 0.6 percent per "
+        "client per round, and one held-out healthy run in six alarms by "
+        "construction.}",
+        "\\label{tab:robust}",
+        "\\end{table}",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def table_fedrr_native(scores: dict) -> str:
     """Table: FedRR at its own control limit, no calibration on our runs."""
     lines = [
@@ -708,8 +790,9 @@ def table_fedrr_native(scores: dict) -> str:
         "in-control average run length 30, as in its paper). No run is used "
         "for calibration, so all six healthy runs per level count. "
         "Step-normalised: the residual divided by the client's number of "
-        "local steps, which removes the effect of unequal client data sizes "
-        "on update magnitude. Fault runs: every fault run FedRR could be "
+        "local SGD steps that round, a rough correction for clients with "
+        "more data taking more steps; it does not make clients exchangeable. "
+        "Fault runs: every fault run FedRR could be "
         "scored on at that level, all severities.}",
         "\\label{tab:fedrr}",
         "\\end{table}",
@@ -733,6 +816,7 @@ def main() -> int:
     (TABLES / "rotation.tex").write_text(table_rotation(repo))
     (TABLES / "fedrr.tex").write_text(table_fedrr_native(scores))
     (TABLES / "pooled.tex").write_text(table_pooled(repo))
+    (TABLES / "robust.tex").write_text(table_robust(repo))
     fig_operating_curve(scores)
     fig_drift_trace(repo)
     print(
