@@ -734,7 +734,8 @@ def table_robust(repo: Path) -> str:
         "report it; it equals the update norm when nothing is clipped. "
         "Every cell's held-out false-alarm rate is at most 0.6 percent per "
         "client per round, and one held-out healthy run in six alarms by "
-        "construction.}",
+        "construction, except the pre-clip norm, whose CUSUM stayed at zero "
+        "in every healthy run (threshold zero, no held-out alarm).}",
         "\\label{tab:robust}",
         "\\end{table}",
     ]
@@ -790,8 +791,10 @@ def table_fedrr_native(scores: dict) -> str:
         "in-control average run length 30, as in its paper). No run is used "
         "for calibration, so all six healthy runs per level count. "
         "Step-normalised: the residual divided by the client's number of "
-        "local SGD steps that round, a rough correction for clients with "
-        "more data taking more steps; it does not make clients exchangeable. "
+        "local SGD steps that round, a crude correction for clients with "
+        "more data taking more steps; it does not make clients exchangeable, "
+        "and near-IID, where steps differ by about 4 percent, it raises the "
+        "false-alarm rate from 2.4 to 8.8 percent. "
         "Fault runs: every fault run FedRR could be "
         "scored on at that level, all severities.}",
         "\\label{tab:fedrr}",
