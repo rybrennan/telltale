@@ -28,6 +28,21 @@ sys.path.insert(0, str(REPO))
 from telltale.detect import cusum, level_series  # noqa: E402
 
 RESULTS = REPO / "results"
+
+
+def _review4_cell(d: dict) -> bool:
+    """Say whether a run belongs to the review-4 partition or clipping cells.
+
+    Args:
+        d: A result file's contents.
+
+    Returns:
+        True when the run is not part of the main grid.
+    """
+    c = d["config"]
+    return c.get("partition_seed", 0) != 0 or c.get("clip_norm") is not None
+
+
 FIG = REPO / "figures"
 ALPHA_COLOR = {100.0: "#2a78d6", 0.5: "#eb6834", 0.1: "#1baf7a"}
 ALPHA_LABEL = {
@@ -70,6 +85,8 @@ def healthy_runs(
     out = {}
     for f in sorted(RESULTS.glob("probes_*.json")):
         d = json.loads(f.read_text())
+        if _review4_cell(d):
+            continue
         if dense_only and d.get("contact"):
             continue
         if d["config"]["train_seed"] != 0:
@@ -187,6 +204,8 @@ def dense_healthy(alpha: float) -> Path:
     """
     for f in sorted(RESULTS.glob("probes_*.json")):
         d = json.loads(f.read_text())
+        if _review4_cell(d):
+            continue
         if (
             d["config"]["dirichlet_alpha"] == alpha
             and d["config"]["train_seed"] == 0

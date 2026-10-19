@@ -742,6 +742,64 @@ def table_robust(repo: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
+def table_fedrr_allowance(repo: Path) -> str:
+    """Appendix table: FedRR with the printed allowance (d/2) and the one used."""
+    data = json.loads((repo / "results" / "fedrr_sensitivity.json").read_text())
+    lines = [
+        "\\begin{table}[H]",
+        "\\centering",
+        "\\small",
+        "\\begin{tabular}{llcccc}",
+        "\\toprule",
+        "Skew & Allowance & $H$ & Healthy runs alarmed & Caught at $H$ "
+        "& Caught, five-run threshold \\\\",
+        "\\midrule",
+    ]
+    for i, a in enumerate(ALPHAS):
+        if i:
+            lines.append("\\addlinespace")
+        for j, (label, name) in enumerate(
+            (("printed (d/2)", "printed, $d/2$"), ("used (d)", "used, $d$"))
+        ):
+            blk = data[label]
+            nr = next(
+                r
+                for r in blk["native"]
+                if r["alpha"] == a and r["stat"] == "fedrr"
+            )
+            pr = next(
+                r
+                for r in blk["pooled5"]
+                if r["alpha"] == a and r["stat"] == "fedrr"
+            )
+            alarmed = round(nr["runs_any_alarm"] * nr["healthy_runs"])
+            lines.append(
+                (f"$\\alpha = {ALPHA_TEX[a]}$" if j == 0 else "")
+                + f" & {name} & {blk['h']:.2f} & {alarmed} of "
+                f"{nr['healthy_runs']} ({fmt_pct(nr['node_round_far'])}\\%) & "
+                f"{nr['detected']} of {nr['fault_runs']} & "
+                f"{pr['caught']} ({pr['strict']}) of {pr['n']} \\\\"
+            )
+    lines += [
+        "\\bottomrule",
+        "\\end{tabular}",
+        "\\caption{FedRR with the CUSUM allowance as printed in its paper "
+        "($d/2 = 0.25$) and as used here ($d = 0.5$), on the same runs. $H$: "
+        "the control limit giving an in-control average run length of 30 for "
+        "ten clients under that allowance. Healthy runs alarmed, of six, with "
+        "the false-alarm rate per client per round in parentheses; caught at "
+        "$H$: every fault run FedRR could be scored on (all severities); "
+        "caught at the five-run threshold: mid-severity runs, with the strict "
+        "count in parentheses (24 at $\\alpha = 0.1$). The allowance changes "
+        "no detection count at its own limit and, under skew, none at the "
+        "empirical threshold; near-IID at the empirical threshold it moves "
+        "FedRR from 42 to 46 of 48.}",
+        "\\label{tab:fedrr-allowance}",
+        "\\end{table}",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def table_fedrr_native(scores: dict) -> str:
     """Table: FedRR at its own control limit, no calibration on our runs."""
     lines = [
@@ -820,6 +878,7 @@ def main() -> int:
     (TABLES / "fedrr.tex").write_text(table_fedrr_native(scores))
     (TABLES / "pooled.tex").write_text(table_pooled(repo))
     (TABLES / "robust.tex").write_text(table_robust(repo))
+    (TABLES / "fedrr_allowance.tex").write_text(table_fedrr_allowance(repo))
     fig_operating_curve(scores)
     fig_drift_trace(repo)
     print(

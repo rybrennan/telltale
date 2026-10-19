@@ -68,6 +68,33 @@ The same for every node and every run. Faults in this study start at round 15.
 """
 
 
+MAIN_ONSET = 15
+"""Fault onset of every main-grid run. The review-4 onset cells use 10 and 22
+but share the main grid's configuration fingerprint, so they must be told
+apart by their fault."""
+
+
+def in_main_grid(d: dict) -> bool:
+    """True for the main grid; False for the review-4 cells.
+
+    The partition, onset and clipping cells (scripts/run_grid.py
+    --partition-seed, --onset, --clip-norm) are scored by review4_scores.py.
+    Left in, the onset cells would mix into the main grid's families.
+
+    Args:
+        d: A result file's contents.
+
+    Returns:
+        False when the run uses another partition, clips updates, or starts
+        its fault at another round.
+    """
+    c = d["config"]
+    if c.get("partition_seed", 0) != 0 or c.get("clip_norm") is not None:
+        return False
+    fault = d.get("fault")
+    return fault is None or fault["onset"] == MAIN_ONSET
+
+
 def platform_classes(d: dict) -> np.ndarray:
     """Label each node 'sub' if it is on a contact schedule, else 'ship'.
 
@@ -265,6 +292,8 @@ def main() -> int:
     families: dict[tuple, dict[int, tuple[dict, dict]]] = {}
     for f in sorted(RESULTS.glob("probes_*.json")):
         d, probs, upd = load(f.stem)
+        if not in_main_grid(d):
+            continue
         families.setdefault(family(d), {})[d["config"]["train_seed"]] = (
             d,
             scored(d, probs, upd),
@@ -272,6 +301,8 @@ def main() -> int:
     faults = []
     for f in sorted(RESULTS.glob("fault_*.json")):
         d, probs, upd = load(f.stem)
+        if not in_main_grid(d):
+            continue
         faults.append((d, scored(d, probs, upd)))
 
     # ── false-alarm rate on held-out healthy seeds ──

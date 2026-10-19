@@ -58,3 +58,21 @@ def test_strict_rule_needs_the_target_first():
     late = r4.fault_outcome(fl2, target=2, onset=15)
     assert late["strict"] and late["false_clients"] == 2
     assert late["false_node_rounds"] == 3
+
+
+def test_main_grid_filter_excludes_the_review4_cells():
+    """The onset cells share the main grid's fingerprint, so only the fault's
+    onset tells them apart; another partition or clipping is in the config."""
+    main = {"config": {"partition_seed": 0}, "fault": {"onset": 15}}
+    healthy = {"config": {"partition_seed": 0}}
+    assert sf.in_main_grid(main) and sf.in_main_grid(healthy)
+    assert not sf.in_main_grid(
+        {"config": {"partition_seed": 0}, "fault": {"onset": 10}}
+    )
+    assert not sf.in_main_grid(
+        {"config": {"partition_seed": 0}, "fault": {"onset": 22}}
+    )
+    assert not sf.in_main_grid({"config": {"partition_seed": 2}})
+    assert not sf.in_main_grid(
+        {"config": {"partition_seed": 0, "clip_norm": 0.5}, "fault": None}
+    )

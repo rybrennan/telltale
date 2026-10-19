@@ -29,6 +29,9 @@ def main() -> int:
     runs = []
     for f in sorted(RESULTS.glob("probes_*.json")):
         d = json.loads(f.read_text())
+        c = d["config"]
+        if c.get("partition_seed", 0) != 0 or c.get("clip_norm") is not None:
+            continue  # review-4 cells; scored by review4_scores.py
         d["_stem"] = f.stem
         runs.append(d)
     if not runs:
