@@ -670,6 +670,10 @@ SuperNode); porting to that CLI is Phase 2 work. Tests:
 `tests/test_flower_integration.py`, including one that pins the known limit (drift toward the
 fleet is not flagged by the one-sided statistic).
 
+## Agents: first test
+
+The same detector, pointed at a population of LLM agents: every agent answers the same fixed probe tasks each round, and telltale flags the agent whose answers drift from its peers and from its own history. In a first small test (5 Claude Haiku triage agents, 20 probe tickets, 8 runs), it named a quietly edited agent in both policy-change runs and a model swap in one of two, within two rounds, with no healthy agent blamed; one of four healthy runs raised a false alarm. Details, limits and the command to rerun it: [`examples/agents`](examples/agents/README.md).
+
 ## Integration: the layer inside NVIDIA FLARE
 
 `telltale/integrations/nvflare.py` packages the layer as an NVFlare `ModelAggregator`

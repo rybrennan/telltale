@@ -1,0 +1,80 @@
+{
+  "setup": {
+    "agents": 5,
+    "probes": 20,
+    "rounds": 10,
+    "onset": 5,
+    "reference_rounds": [
+      1,
+      4
+    ],
+    "model": "haiku",
+    "fault_agent": 2
+  },
+  "threshold_all_healthy": 13.614177357021742,
+  "false_alarms": [
+    {
+      "held_out": "healthy_0",
+      "threshold": 13.614177357021742,
+      "agent_rounds_flagged": 0,
+      "agent_rounds": 25,
+      "run_alarmed": false
+    },
+    {
+      "held_out": "healthy_1",
+      "threshold": 13.614177357021742,
+      "agent_rounds_flagged": 0,
+      "agent_rounds": 25,
+      "run_alarmed": false
+    },
+    {
+      "held_out": "healthy_2",
+      "threshold": 13.614177357021742,
+      "agent_rounds_flagged": 0,
+      "agent_rounds": 25,
+      "run_alarmed": false
+    },
+    {
+      "held_out": "healthy_3",
+      "threshold": 3.3351697794533366,
+      "agent_rounds_flagged": 5,
+      "agent_rounds": 25,
+      "run_alarmed": true
+    }
+  ],
+  "detections": [
+    {
+      "run": "policy_0",
+      "fault": "policy",
+      "caught": true,
+      "rounds_to_flag": 2,
+      "healthy_agents_flagged": [],
+      "faulted_agent_peak": 31.553309568868883
+    },
+    {
+      "run": "policy_1",
+      "fault": "policy",
+      "caught": true,
+      "rounds_to_flag": 1,
+      "healthy_agents_flagged": [],
+      "faulted_agent_peak": 59.849970134726895
+    },
+    {
+      "run": "model_0",
+      "fault": "model",
+      "caught": true,
+      "rounds_to_flag": 2,
+      "healthy_agents_flagged": [],
+      "faulted_agent_peak": 23.06539787207664
+    },
+    {
+      "run": "model_1",
+      "fault": "model",
+      "caught": false,
+      "rounds_to_flag": null,
+      "healthy_agents_flagged": [],
+      "faulted_agent_peak": 12.12571151087129
+    }
+  ],
+  "unparsed_answers": 0
+}
