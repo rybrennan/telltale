@@ -72,3 +72,29 @@ def test_detector_flags_the_agent_that_changes():
     s = cusum(level_series(np.array(probs))["level"], slice(1, 5))
     peak = np.nanmax(s[5:], axis=0)
     assert int(np.argmax(peak)) == 2
+
+
+def test_tasks_parse_and_probs():
+    from telltale.agents.tasks import TASKS
+    for t in TASKS.values():
+        text = "[" + ",".join(
+            '{"id":%d,%s}' % (i, ",".join(f'"{f}":"{v[0]}"' for f, v in t.fields.items()))
+            for i in range(len(t.probes))) + "]"
+        a = t.parse(text)
+        assert all(x is not None for x in a)
+        p = t.probs(a)
+        assert p.shape == (len(t.probes), t.n_classes)
+        assert np.allclose(p.sum(axis=1), 1)
+
+
+def test_eval_fault_only_hits_one_agent_after_onset():
+    import importlib.util, pathlib
+    spec = importlib.util.spec_from_file_location(
+        "agent_eval", pathlib.Path(__file__).parent.parent / "scripts" / "agent_eval.py")
+    ae = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ae)
+    for f in ae.FAULTS:
+        base = [ae.setup("triage", None, -1, k, r) for r in range(ae.ROUNDS) for k in range(ae.N_AGENTS)]
+        got = [ae.setup("triage", f, 2, k, r) for r in range(ae.ROUNDS) for k in range(ae.N_AGENTS)]
+        changed = {(i // ae.N_AGENTS, i % ae.N_AGENTS) for i, (b, g) in enumerate(zip(base, got)) if b != g}
+        assert changed == {(r, 2) for r in range(ae.ONSET, ae.ROUNDS)}

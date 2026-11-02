@@ -1,0 +1,1470 @@
+{
+  "setup": {
+    "agents": 6,
+    "rounds": 10,
+    "onset": 5,
+    "reference_rounds": [
+      1,
+      4
+    ],
+    "models": {
+      "triage": "haiku",
+      "expenses": "sonnet"
+    },
+    "swap": {
+      "triage": "sonnet",
+      "expenses": "haiku"
+    },
+    "calibration_runs": 6,
+    "held_out_healthy_runs": 6,
+    "runs_per_fault": 6
+  },
+  "tasks": {
+    "triage": {
+      "thresholds": {
+        "cusum": 17.816127453929084,
+        "dis": 0.18333333333333332
+      },
+      "dashboard_healthy_band": {
+        "rate": [
+          0.2,
+          0.2833333333333333
+        ],
+        "agree": [
+          0.7916666666666666,
+          0.9583333333333334
+        ]
+      },
+      "false_alarms": {
+        "cusum": {
+          "agent_rounds_flagged": 0,
+          "agent_rounds": 180,
+          "runs_alarmed": 0,
+          "runs": 6
+        },
+        "dis": {
+          "agent_rounds_flagged": 0,
+          "agent_rounds": 180,
+          "runs_alarmed": 0,
+          "runs": 6
+        }
+      },
+      "detection": {
+        "policy": {
+          "summary": {
+            "cusum": {
+              "caught": 5,
+              "strict": 4,
+              "runs": 6,
+              "wilson95": [
+                0.43649056343635395,
+                0.9699474141282697
+              ],
+              "median_rounds": 1.0
+            },
+            "dis": {
+              "caught": 6,
+              "strict": 6,
+              "runs": 6,
+              "wilson95": [
+                0.6096569663469354,
+                0.9999999999999999
+              ],
+              "median_rounds": 0.0
+            },
+            "dashboard_moved": {
+              "rate": 6,
+              "agree": 3
+            }
+          },
+          "runs": [
+            {
+              "run": "triage/policy_00",
+              "agent": 0,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "triage/policy_01",
+              "agent": 1,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 1
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/policy_02",
+              "agent": 2,
+              "cusum": {
+                "caught": true,
+                "strict": false,
+                "rounds_to_flag": 2
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "triage/policy_03",
+              "agent": 3,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/policy_04",
+              "agent": 4,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 2
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "triage/policy_05",
+              "agent": 5,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 1
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 4
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": false
+              }
+            }
+          ]
+        },
+        "cautious": {
+          "summary": {
+            "cusum": {
+              "caught": 4,
+              "strict": 3,
+              "runs": 6,
+              "wilson95": [
+                0.29998832134152864,
+                0.9032306674407831
+              ],
+              "median_rounds": 3.0
+            },
+            "dis": {
+              "caught": 3,
+              "strict": 3,
+              "runs": 6,
+              "wilson95": [
+                0.18761280689940868,
+                0.8123871931005913
+              ],
+              "median_rounds": 0.0
+            },
+            "dashboard_moved": {
+              "rate": 2,
+              "agree": 1
+            }
+          },
+          "runs": [
+            {
+              "run": "triage/cautious_00",
+              "agent": 0,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/cautious_01",
+              "agent": 1,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/cautious_02",
+              "agent": 2,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 3
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/cautious_03",
+              "agent": 3,
+              "cusum": {
+                "caught": true,
+                "strict": false,
+                "rounds_to_flag": 4
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "triage/cautious_04",
+              "agent": 4,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/cautious_05",
+              "agent": 5,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 3
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 1
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            }
+          ]
+        },
+        "memory": {
+          "summary": {
+            "cusum": {
+              "caught": 2,
+              "strict": 2,
+              "runs": 6,
+              "wilson95": [
+                0.09676933255921683,
+                0.7000116786584712
+              ],
+              "median_rounds": 2.5
+            },
+            "dis": {
+              "caught": 4,
+              "strict": 4,
+              "runs": 6,
+              "wilson95": [
+                0.29998832134152864,
+                0.9032306674407831
+              ],
+              "median_rounds": 2.5
+            },
+            "dashboard_moved": {
+              "rate": 1,
+              "agree": 1
+            }
+          },
+          "runs": [
+            {
+              "run": "triage/memory_00",
+              "agent": 0,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/memory_01",
+              "agent": 1,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 2
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 2
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "triage/memory_02",
+              "agent": 2,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 1
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/memory_03",
+              "agent": 3,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 3
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/memory_04",
+              "agent": 4,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 3
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 3
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/memory_05",
+              "agent": 5,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            }
+          ]
+        },
+        "offquiz": {
+          "summary": {
+            "cusum": {
+              "caught": 0,
+              "strict": 0,
+              "runs": 6,
+              "wilson95": [
+                0.0,
+                0.3903430336530645
+              ],
+              "median_rounds": null
+            },
+            "dis": {
+              "caught": 0,
+              "strict": 0,
+              "runs": 6,
+              "wilson95": [
+                0.0,
+                0.3903430336530645
+              ],
+              "median_rounds": null
+            },
+            "dashboard_moved": {
+              "rate": 1,
+              "agree": 1
+            }
+          },
+          "runs": [
+            {
+              "run": "triage/offquiz_00",
+              "agent": 0,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/offquiz_01",
+              "agent": 1,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "triage/offquiz_02",
+              "agent": 2,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/offquiz_03",
+              "agent": 3,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/offquiz_04",
+              "agent": 4,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/offquiz_05",
+              "agent": 5,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            }
+          ]
+        },
+        "model": {
+          "summary": {
+            "cusum": {
+              "caught": 2,
+              "strict": 2,
+              "runs": 6,
+              "wilson95": [
+                0.09676933255921683,
+                0.7000116786584712
+              ],
+              "median_rounds": 2.0
+            },
+            "dis": {
+              "caught": 0,
+              "strict": 0,
+              "runs": 6,
+              "wilson95": [
+                0.0,
+                0.3903430336530645
+              ],
+              "median_rounds": null
+            },
+            "dashboard_moved": {
+              "rate": 0,
+              "agree": 1
+            }
+          },
+          "runs": [
+            {
+              "run": "triage/model_00",
+              "agent": 0,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/model_01",
+              "agent": 1,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "triage/model_02",
+              "agent": 2,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 2
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/model_03",
+              "agent": 3,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/model_04",
+              "agent": 4,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "triage/model_05",
+              "agent": 5,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 2
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            }
+          ]
+        }
+      },
+      "unparsed_answers": 0
+    },
+    "expenses": {
+      "thresholds": {
+        "cusum": 12.135141741467299,
+        "dis": 0.25
+      },
+      "dashboard_healthy_band": {
+        "rate": [
+          0.2916666666666667,
+          0.35
+        ],
+        "agree": [
+          0.825,
+          0.925
+        ]
+      },
+      "false_alarms": {
+        "cusum": {
+          "agent_rounds_flagged": 0,
+          "agent_rounds": 180,
+          "runs_alarmed": 0,
+          "runs": 6
+        },
+        "dis": {
+          "agent_rounds_flagged": 1,
+          "agent_rounds": 180,
+          "runs_alarmed": 1,
+          "runs": 6
+        }
+      },
+      "detection": {
+        "policy": {
+          "summary": {
+            "cusum": {
+              "caught": 6,
+              "strict": 5,
+              "runs": 6,
+              "wilson95": [
+                0.6096569663469354,
+                0.9999999999999999
+              ],
+              "median_rounds": 0.0
+            },
+            "dis": {
+              "caught": 6,
+              "strict": 6,
+              "runs": 6,
+              "wilson95": [
+                0.6096569663469354,
+                0.9999999999999999
+              ],
+              "median_rounds": 0.0
+            },
+            "dashboard_moved": {
+              "rate": 6,
+              "agree": 6
+            }
+          },
+          "runs": [
+            {
+              "run": "expenses/policy_00",
+              "agent": 0,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/policy_01",
+              "agent": 1,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/policy_02",
+              "agent": 2,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/policy_03",
+              "agent": 3,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 1
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/policy_04",
+              "agent": 4,
+              "cusum": {
+                "caught": true,
+                "strict": false,
+                "rounds_to_flag": 3
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/policy_05",
+              "agent": 5,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 0
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            }
+          ]
+        },
+        "cautious": {
+          "summary": {
+            "cusum": {
+              "caught": 0,
+              "strict": 0,
+              "runs": 6,
+              "wilson95": [
+                0.0,
+                0.3903430336530645
+              ],
+              "median_rounds": null
+            },
+            "dis": {
+              "caught": 0,
+              "strict": 0,
+              "runs": 6,
+              "wilson95": [
+                0.0,
+                0.3903430336530645
+              ],
+              "median_rounds": null
+            },
+            "dashboard_moved": {
+              "rate": 1,
+              "agree": 2
+            }
+          },
+          "runs": [
+            {
+              "run": "expenses/cautious_00",
+              "agent": 0,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/cautious_01",
+              "agent": 1,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/cautious_02",
+              "agent": 2,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/cautious_03",
+              "agent": 3,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/cautious_04",
+              "agent": 4,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/cautious_05",
+              "agent": 5,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            }
+          ]
+        },
+        "memory": {
+          "summary": {
+            "cusum": {
+              "caught": 1,
+              "strict": 1,
+              "runs": 6,
+              "wilson95": [
+                0.03005258587173032,
+                0.563509436563646
+              ],
+              "median_rounds": 4.0
+            },
+            "dis": {
+              "caught": 0,
+              "strict": 0,
+              "runs": 6,
+              "wilson95": [
+                0.0,
+                0.3903430336530645
+              ],
+              "median_rounds": null
+            },
+            "dashboard_moved": {
+              "rate": 1,
+              "agree": 2
+            }
+          },
+          "runs": [
+            {
+              "run": "expenses/memory_00",
+              "agent": 0,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/memory_01",
+              "agent": 1,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/memory_02",
+              "agent": 2,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/memory_03",
+              "agent": 3,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 4
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/memory_04",
+              "agent": 4,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/memory_05",
+              "agent": 5,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": true
+              }
+            }
+          ]
+        },
+        "offquiz": {
+          "summary": {
+            "cusum": {
+              "caught": 0,
+              "strict": 0,
+              "runs": 6,
+              "wilson95": [
+                0.0,
+                0.3903430336530645
+              ],
+              "median_rounds": null
+            },
+            "dis": {
+              "caught": 0,
+              "strict": 0,
+              "runs": 6,
+              "wilson95": [
+                0.0,
+                0.3903430336530645
+              ],
+              "median_rounds": null
+            },
+            "dashboard_moved": {
+              "rate": 0,
+              "agree": 2
+            }
+          },
+          "runs": [
+            {
+              "run": "expenses/offquiz_00",
+              "agent": 0,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/offquiz_01",
+              "agent": 1,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/offquiz_02",
+              "agent": 2,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/offquiz_03",
+              "agent": 3,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/offquiz_04",
+              "agent": 4,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            },
+            {
+              "run": "expenses/offquiz_05",
+              "agent": 5,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": false
+              }
+            }
+          ]
+        },
+        "model": {
+          "summary": {
+            "cusum": {
+              "caught": 2,
+              "strict": 1,
+              "runs": 6,
+              "wilson95": [
+                0.09676933255921683,
+                0.7000116786584712
+              ],
+              "median_rounds": 2.5
+            },
+            "dis": {
+              "caught": 5,
+              "strict": 3,
+              "runs": 6,
+              "wilson95": [
+                0.43649056343635395,
+                0.9699474141282697
+              ],
+              "median_rounds": 3.0
+            },
+            "dashboard_moved": {
+              "rate": 1,
+              "agree": 5
+            }
+          },
+          "runs": [
+            {
+              "run": "expenses/model_00",
+              "agent": 0,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/model_01",
+              "agent": 1,
+              "cusum": {
+                "caught": true,
+                "strict": false,
+                "rounds_to_flag": 1
+              },
+              "dis": {
+                "caught": true,
+                "strict": false,
+                "rounds_to_flag": 1
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/model_02",
+              "agent": 2,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": true,
+                "strict": false,
+                "rounds_to_flag": 3
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/model_03",
+              "agent": 3,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 3
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/model_04",
+              "agent": 4,
+              "cusum": {
+                "caught": false,
+                "strict": false,
+                "rounds_to_flag": null
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 1
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": false,
+                "agree": true
+              }
+            },
+            {
+              "run": "expenses/model_05",
+              "agent": 5,
+              "cusum": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 4
+              },
+              "dis": {
+                "caught": true,
+                "strict": true,
+                "rounds_to_flag": 4
+              },
+              "dashboard_outside_healthy_band": {
+                "rate": true,
+                "agree": false
+              }
+            }
+          ]
+        }
+      },
+      "unparsed_answers": 0
+    }
+  }
+}
