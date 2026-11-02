@@ -6,6 +6,11 @@ and `telltale.detect` flags the agent whose answers drift from its peers and
 from its own history.
 """
 
-from telltale.agents.probes import FIELDS, PROBES, answers_to_probs, parse_answers
+from telltale.agents.probes import (
+    FIELDS,
+    PROBES,
+    answers_to_probs,
+    parse_answers,
+)
 
 __all__ = ["FIELDS", "PROBES", "answers_to_probs", "parse_answers"]

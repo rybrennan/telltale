@@ -85,7 +85,7 @@ def call_one(run: str, fault: str | None, r: int, k: int) -> str:
     if p.exists() and p.read_text().strip():
         return "cached"
     system, model = agent_setup(fault, k, r)
-    for attempt in range(3):
+    for _ in range(3):
         try:
             text = claude_cli(system, prompt_for(), model=model)
             p.parent.mkdir(parents=True, exist_ok=True)
@@ -114,15 +114,19 @@ def probs_for(run: str) -> np.ndarray:
     """(rounds, agents, probes, classes) array for one run."""
     rows = []
     for r in range(ROUNDS):
-        rows.append([
-            answers_to_probs(parse_answers(reply_path(run, r, k).read_text()))
-            for k in range(len(AGENTS))
-        ])
+        rows.append(
+            [
+                answers_to_probs(
+                    parse_answers(reply_path(run, r, k).read_text())
+                )
+                for k in range(len(AGENTS))
+            ]
+        )
     return np.array(rows)
 
 
 def cusum_for(run: str) -> np.ndarray:
-    """(rounds, agents) CUSUM of each agent's level against its own reference."""
+    """(rounds, agents) CUSUM of each agent's level vs its own reference."""
     return cusum(level_series(probs_for(run))["level"], REFERENCE)
 
 
@@ -131,17 +135,20 @@ def score() -> dict:
     healthy = [r for r, f in RUNS.items() if f is None]
     S = {run: cusum_for(run) for run in RUNS}
     stop = REFERENCE.stop
-    # False alarms: threshold from the other healthy runs, scored on one held out.
+    # False alarms: threshold from other healthy runs, scored on one held out.
     far = []
     for h in healthy:
         thr = max(np.nanmax(S[o][stop:]) for o in healthy if o != h)
         s = S[h][stop:]
-        far.append({
-            "held_out": h, "threshold": float(thr),
-            "agent_rounds_flagged": int((s > thr).sum()),
-            "agent_rounds": int(np.isfinite(s).sum()),
-            "run_alarmed": bool((s > thr).any()),
-        })
+        far.append(
+            {
+                "held_out": h,
+                "threshold": float(thr),
+                "agent_rounds_flagged": int((s > thr).sum()),
+                "agent_rounds": int(np.isfinite(s).sum()),
+                "run_alarmed": bool((s > thr).any()),
+            }
+        )
     thr_all = max(np.nanmax(S[h][stop:]) for h in healthy)
     det = []
     for run, fault in RUNS.items():
@@ -149,28 +156,44 @@ def score() -> dict:
             continue
         s = S[run]
         hits = [r for r in range(ONSET, ROUNDS) if s[r, FAULT_AGENT] > thr_all]
-        others = sorted({
-            k for r in range(stop, ROUNDS) for k in range(len(AGENTS))
-            if k != FAULT_AGENT and s[r, k] > thr_all
-        })
-        det.append({
-            "run": run, "fault": fault, "caught": bool(hits),
-            "rounds_to_flag": hits[0] - ONSET if hits else None,
-            "healthy_agents_flagged": others,
-            "faulted_agent_peak": float(np.nanmax(s[ONSET:, FAULT_AGENT])),
-        })
+        others = sorted(
+            {
+                k
+                for r in range(stop, ROUNDS)
+                for k in range(len(AGENTS))
+                if k != FAULT_AGENT and s[r, k] > thr_all
+            }
+        )
+        det.append(
+            {
+                "run": run,
+                "fault": fault,
+                "caught": bool(hits),
+                "rounds_to_flag": hits[0] - ONSET if hits else None,
+                "healthy_agents_flagged": others,
+                "faulted_agent_peak": float(np.nanmax(s[ONSET:, FAULT_AGENT])),
+            }
+        )
     parse_fail = sum(
         a is None
-        for run in RUNS for r in range(ROUNDS) for k in range(len(AGENTS))
+        for run in RUNS
+        for r in range(ROUNDS)
+        for k in range(len(AGENTS))
         for a in parse_answers(reply_path(run, r, k).read_text())
     )
     out = {
-        "setup": {"agents": len(AGENTS), "probes": len(PROBES),
-                  "rounds": ROUNDS, "onset": ONSET,
-                  "reference_rounds": [REFERENCE.start, REFERENCE.stop - 1],
-                  "model": MODEL_DEFAULT, "fault_agent": FAULT_AGENT},
+        "setup": {
+            "agents": len(AGENTS),
+            "probes": len(PROBES),
+            "rounds": ROUNDS,
+            "onset": ONSET,
+            "reference_rounds": [REFERENCE.start, REFERENCE.stop - 1],
+            "model": MODEL_DEFAULT,
+            "fault_agent": FAULT_AGENT,
+        },
         "threshold_all_healthy": float(thr_all),
-        "false_alarms": far, "detections": det,
+        "false_alarms": far,
+        "detections": det,
         "unparsed_answers": parse_fail,
     }
     (REPO / "results" / "agent_demo.json").write_text(json.dumps(out, indent=2))
@@ -179,8 +202,10 @@ def score() -> dict:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     ap.add_argument("command", choices=["run", "score"])
     ap.add_argument("--jobs", type=int, default=5)
     args = ap.parse_args()

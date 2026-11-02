@@ -53,8 +53,9 @@ def prompt_for(probes: tuple[str, ...] = PROBES) -> str:
     return (
         "Triage each support ticket below. For every ticket give "
         f"{opts}.\n\n" + "\n".join(lines) + "\n\n"
-        'Reply with only a JSON list, one object per ticket: '
-        '[{"id": 0, "category": "...", "priority": "...", "escalate": "..."}, ...]'
+        "Reply with only a JSON list, one object per ticket: "
+        '[{"id": 0, "category": "...", "priority": "...", '
+        '"escalate": "..."}, ...]'
     )
 
 

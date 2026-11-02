@@ -36,7 +36,11 @@ def test_parse_handles_fences_and_bad_labels():
     labels = [("billing", "high", "no")] * len(PROBES)
     labels[1] = ("nonsense", "low", "yes")
     out = parse_answers(_reply(labels))
-    assert out[0] == {"category": "billing", "priority": "high", "escalate": "no"}
+    assert out[0] == {
+        "category": "billing",
+        "priority": "high",
+        "escalate": "no",
+    }
     assert out[1]["category"] is None and out[1]["priority"] == "low"
     assert parse_answers("no json here") == [None] * len(PROBES)
 
@@ -76,10 +80,20 @@ def test_detector_flags_the_agent_that_changes():
 
 def test_tasks_parse_and_probs():
     from telltale.agents.tasks import TASKS
+
     for t in TASKS.values():
-        text = "[" + ",".join(
-            '{"id":%d,%s}' % (i, ",".join(f'"{f}":"{v[0]}"' for f, v in t.fields.items()))
-            for i in range(len(t.probes))) + "]"
+        text = (
+            "["
+            + ",".join(
+                '{"id":'
+                + str(i)
+                + ","
+                + ",".join(f'"{f}":"{v[0]}"' for f, v in t.fields.items())
+                + "}"
+                for i in range(len(t.probes))
+            )
+            + "]"
+        )
         a = t.parse(text)
         assert all(x is not None for x in a)
         p = t.probs(a)
@@ -88,13 +102,29 @@ def test_tasks_parse_and_probs():
 
 
 def test_eval_fault_only_hits_one_agent_after_onset():
-    import importlib.util, pathlib
+    import importlib.util
+    import pathlib
+
     spec = importlib.util.spec_from_file_location(
-        "agent_eval", pathlib.Path(__file__).parent.parent / "scripts" / "agent_eval.py")
+        "agent_eval",
+        pathlib.Path(__file__).parent.parent / "scripts" / "agent_eval.py",
+    )
     ae = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ae)
     for f in ae.FAULTS:
-        base = [ae.setup("triage", None, -1, k, r) for r in range(ae.ROUNDS) for k in range(ae.N_AGENTS)]
-        got = [ae.setup("triage", f, 2, k, r) for r in range(ae.ROUNDS) for k in range(ae.N_AGENTS)]
-        changed = {(i // ae.N_AGENTS, i % ae.N_AGENTS) for i, (b, g) in enumerate(zip(base, got)) if b != g}
+        base = [
+            ae.setup("triage", None, -1, k, r)
+            for r in range(ae.ROUNDS)
+            for k in range(ae.N_AGENTS)
+        ]
+        got = [
+            ae.setup("triage", f, 2, k, r)
+            for r in range(ae.ROUNDS)
+            for k in range(ae.N_AGENTS)
+        ]
+        changed = {
+            (i // ae.N_AGENTS, i % ae.N_AGENTS)
+            for i, (b, g) in enumerate(zip(base, got, strict=True))
+            if b != g
+        }
         assert changed == {(r, 2) for r in range(ae.ONSET, ae.ROUNDS)}

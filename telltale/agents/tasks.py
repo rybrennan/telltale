@@ -63,8 +63,12 @@ class Task:
                 continue
             if 0 <= i < len(self.probes):
                 out[i] = {
-                    f: (v if (v := str(item.get(f, "")).strip().lower()) in allowed
-                        else None)
+                    f: (
+                        v
+                        if (v := str(item.get(f, "")).strip().lower())
+                        in allowed
+                        else None
+                    )
                     for f, allowed in self.fields.items()
                 }
         return out
@@ -78,7 +82,7 @@ class Task:
             for f, allowed in self.fields.items():
                 v = None if ans is None else ans.get(f)
                 if v is None:
-                    p[i, col:col + len(allowed)] = w / len(allowed)
+                    p[i, col : col + len(allowed)] = w / len(allowed)
                 else:
                     p[i, col + allowed.index(v)] = w
                 col += len(allowed)
@@ -98,8 +102,14 @@ EXPENSES = Task(
     "company travel and expense policy.",
     fields={
         "decision": ("approve", "review", "reject"),
-        "issue": ("none", "missing_receipt", "over_limit", "personal",
-                  "unclear", "other"),
+        "issue": (
+            "none",
+            "missing_receipt",
+            "over_limit",
+            "personal",
+            "unclear",
+            "other",
+        ),
     },
     probes=(
         "Dinner with a client, $86, receipt attached.",
