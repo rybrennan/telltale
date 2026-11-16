@@ -43,3 +43,7 @@ convention = "google"
 "tests/*" = ["D", "ANN"]
 "scripts/*" = ["E402", "D103", "ANN"]
 "paper/*" = ["E501"]  # LaTeX caption strings
+# The FEDn test rig: experiment scripts, treated like scripts/.
+"examples/fedn/client_train.py" = ["D103", "ANN"]
+"examples/fedn/run_experiment.py" = ["D103", "ANN", "E501"]  # report lines
+"examples/fedn/score.py" = ["D103", "ANN", "E501"]  # report lines

@@ -1,0 +1,38 @@
+# Six clients for the telltale test rig. Uses the client image the upstream
+# compose file already built, on the same Docker network as the FEDn server.
+name: fedn033tt
+
+networks:
+  default:
+    name: fedn_default
+    external: true
+
+x-client: &client
+  image: fedn033-client1
+  working_dir: /app
+  command: ["client", "start", "--api-url", "http://api-server:8092"]
+
+x-env: &env
+  GET_HOSTS_FROM: dns
+  FEDN_PACKAGE_EXTRACT_DIR: package
+  FEDN_NUM_DATA_SPLITS: 6
+
+services:
+  tt1:
+    <<: *client
+    environment: {<<: *env, FEDN_DATA_PATH: /app/package/data/clients/1/mnist.pt}
+  tt2:
+    <<: *client
+    environment: {<<: *env, FEDN_DATA_PATH: /app/package/data/clients/2/mnist.pt}
+  tt3:
+    <<: *client
+    environment: {<<: *env, FEDN_DATA_PATH: /app/package/data/clients/3/mnist.pt}
+  tt4:
+    <<: *client
+    environment: {<<: *env, FEDN_DATA_PATH: /app/package/data/clients/4/mnist.pt}
+  tt5:
+    <<: *client
+    environment: {<<: *env, FEDN_DATA_PATH: /app/package/data/clients/5/mnist.pt}
+  tt6:
+    <<: *client
+    environment: {<<: *env, FEDN_DATA_PATH: /app/package/data/clients/6/mnist.pt}

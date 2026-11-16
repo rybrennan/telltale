@@ -2,6 +2,17 @@
 
 Stages were tagged in the private working repository. This public repository is a single squashed release (`v0.6.0`); each entry below states what that stage claimed and what it did not.
 
+## Unreleased: the monitor as FEDn server functions (2026-11-16)
+- `examples/fedn/server_functions.py`: the per-client monitor as a FEDn `ServerFunctions`
+  class, numpy only, inside FEDn's import allowlist. Same level and CUSUM as
+  `telltale.detect`, checked to zero difference in `tests/test_fedn_adapter.py`.
+- Tested on FEDn v0.33.0 (the last open release), not on Scaleout Edge. Six clients, 40
+  rounds, five healthy and four fault runs, one run per fault. The faulty client was named
+  in all four. Under label noise the healthy clients were flagged too unless a flag also
+  required being an outlier that round (a rule added after seeing one run). 5 of 20
+  held-out healthy runs had an alarm, the one-in-four rate a three-run threshold gives.
+  Details and limits: `examples/fedn/README.md`.
+
 ## Unreleased: false-alarm rates counted where a CUSUM can fire (2026-10-17)
 - A CUSUM is undefined until its reference epoch ends (round 15), but false-alarm rates were
   divided by every round after the ten-round burn-in, so every CUSUM-type rate was understated

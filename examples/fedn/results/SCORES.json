@@ -1,0 +1,175 @@
+{
+ "rule2": {
+  "heldout_runs_with_alarm": [
+   5,
+   20
+  ],
+  "faults": {
+   "blur-site2": {
+    "caught": 9,
+    "wrong_or_early": 1,
+    "delays": [
+     12,
+     12,
+     12,
+     12,
+     12,
+     12,
+     12,
+     12,
+     12
+    ]
+   },
+   "blur-site5": {
+    "caught": 10,
+    "wrong_or_early": 0,
+    "delays": [
+     19,
+     18,
+     17,
+     19,
+     19,
+     18,
+     19,
+     19,
+     18,
+     19
+    ]
+   },
+   "labelnoise-site3": {
+    "caught": 9,
+    "wrong_or_early": 1,
+    "delays": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "labelnoise-site6": {
+    "caught": 10,
+    "wrong_or_early": 0,
+    "delays": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ]
+   }
+  }
+ },
+ "rotations": 10,
+ "heldout_false_alarm_client_rounds": [
+  20,
+  3000
+ ],
+ "heldout_runs_with_alarm": [
+  5,
+  20
+ ],
+ "faults": {
+  "blur-site2": {
+   "caught": 10,
+   "wrong_or_early": 1,
+   "delays": [
+    12,
+    12,
+    10,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12
+   ],
+   "fault": {
+    "kind": "blur",
+    "site": 2,
+    "onset": 20,
+    "ramp": 10,
+    "severity": 1.0
+   }
+  },
+  "blur-site5": {
+   "caught": 10,
+   "wrong_or_early": 0,
+   "delays": [
+    19,
+    18,
+    17,
+    19,
+    19,
+    18,
+    19,
+    19,
+    18,
+    19
+   ],
+   "fault": {
+    "kind": "blur",
+    "site": 5,
+    "onset": 20,
+    "ramp": 10,
+    "severity": 1.0
+   }
+  },
+  "labelnoise-site3": {
+   "caught": 10,
+   "wrong_or_early": 10,
+   "delays": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "fault": {
+    "kind": "label_noise",
+    "site": 3,
+    "onset": 20,
+    "ramp": 10,
+    "severity": 0.3
+   }
+  },
+  "labelnoise-site6": {
+   "caught": 10,
+   "wrong_or_early": 10,
+   "delays": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "fault": {
+    "kind": "label_noise",
+    "site": 6,
+    "onset": 20,
+    "ramp": 10,
+    "severity": 0.3
+   }
+  }
+ }
+}

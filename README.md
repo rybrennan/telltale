@@ -80,6 +80,7 @@ rejected are in `docs/`. Provenance of every dataset and method is in `CITATION.
 | Intermittent contact (submarines) | [The submarine arm](#intermittent-contact-the-submarine-arm) |
 | Running inside Flower | [Integration: Flower](#integration-the-layer-inside-flower) |
 | Running inside NVIDIA FLARE, with 72 runs | [Integration: NVIDIA FLARE](#integration-the-layer-inside-nvidia-flare) · [`examples/nvflare`](examples/nvflare/README.md#results) |
+| Running inside FEDn server functions | [Integration: FEDn](#integration-the-layer-inside-fedn) · [`examples/fedn`](examples/fedn/README.md) |
 | Install and run | [Usage](#usage) · [Reproducibility](#reproducibility) |
 | What it cannot do | [Known constraints](#known-constraints) |
 | What changed, release by release | [CHANGELOG.md](CHANGELOG.md) |
@@ -689,6 +690,17 @@ The example is listed in NVIDIA FLARE's
 as an externally maintained project
 ([NVIDIA/NVFlare#5426](https://github.com/NVIDIA/NVFlare/pull/5426)). It is maintained here, not
 by the NVFlare team.
+
+## Integration: the layer inside FEDn
+
+`examples/fedn/server_functions.py` packages the same level and CUSUM as a FEDn `ServerFunctions`
+class, numpy only, inside FEDn's import allowlist. Clients send probe scores in their training
+metadata; aggregation stays ordinary weighted FedAvg and nothing is excluded. It was tested on
+FEDn v0.33.0, the last open release, not on Scaleout Edge: six clients, 40 rounds, one run per
+fault. The faulty client was named in all four fault runs, label noise within one round and a
+slow blur in 10 to 19 rounds. Under label noise the healthy clients were flagged too unless a
+flag also required being an outlier that round. Results, limits and how to rerun:
+[`examples/fedn`](examples/fedn/README.md).
 
 ## Usage
 

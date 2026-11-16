@@ -1,0 +1,6 @@
+# Local overrides for running FEDn 0.33.0 on this Mac. Upstream files are untouched.
+# The minio/minio image named upstream is no longer on Docker Hub (checked 2026-11-16).
+services:
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    command: server /tmp/data --console-address :9001
