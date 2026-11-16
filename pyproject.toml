@@ -39,6 +39,11 @@ ignore = [
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.isort]
+# FEDn client modules sit next to examples/fedn/client_train.py. Naming them
+# keeps import order the same whether or not a local data/ folder exists.
+known-local-folder = ["data", "model"]
+
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D", "ANN"]
 "scripts/*" = ["E402", "D103", "ANN"]
