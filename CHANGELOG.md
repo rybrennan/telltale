@@ -2,6 +2,17 @@
 
 Stages were tagged in the private working repository. This public repository is a single squashed release (`v0.6.0`); each entry below states what that stage claimed and what it did not.
 
+## Unreleased: corrections to how two evaluations are reported (2026-11-18)
+- Agent evaluation (`examples/agents/EVAL.md`): the dashboard's healthy range had been set
+  on all 12 healthy runs, held-out ones included. Calibrated on the same 6 runs as the
+  per-agent monitors, it catches 16 of 36 subtle changes, not 6. The earlier headline
+  ("the dashboard missed 30 of 36") is superseded; per-agent results are unchanged.
+- NVFlare evaluation (`examples/nvflare/README.md`): false alarms are now reported per
+  held-out run first (7 of 30 runs raised any alarm; 3 of 5 in two cells), with the
+  per-contact rates (at most 2.7%, as in v0.7.0 below) kept as supplementary. Strict
+  detections, with no healthy site flagged first, are added: 21 of 36 against 29 of 36
+  caught. Rescored from the same histories; no earlier number changed.
+
 ## Unreleased: the monitor as FEDn server functions (2026-11-16)
 - `examples/fedn/server_functions.py`: the per-client monitor as a FEDn `ServerFunctions`
   class, numpy only, inside FEDn's import allowlist. Same level and CUSUM as

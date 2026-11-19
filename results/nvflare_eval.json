@@ -1,5 +1,5 @@
 {
-  "protocol": "Score the NVFlare integration across heterogeneity and participation.\n\nMeasures detection delay and false-alarm rate. Runs examples/nvflare/job.py\nin the NVFlare simulator over a grid and scores the aggregator's recorded\nhistories with the stage-4 protocol from the README:\n\n    cells          alpha in {100, 0.5, 0.1} x participation in {1.0, 0.6}\n    per cell       healthy train seeds 0-5, and a blur fault (1.5 px,\n                   site-3, onset round 15, ten-round ramp) on seeds 0-5\n    threshold      CUSUM healthy maximum after the reference epoch, seed 0,\n                   per cell; it never sees a fault\n    false alarms   counted on held-out healthy seeds 1-5, per client\n                   contact\n    delay          rounds from onset to the first flag on the faulted client\n\nEvery run records CUSUM with no threshold set; the threshold is applied\nafterwards, so calibration and scoring use exactly the histories the\naggregator wrote.\n\n    python scripts/nvflare_eval.py run --jobs 3   # every missing cell (~2 h)\n    python scripts/nvflare_eval.py score          # tables + results json\n",
+  "protocol": "Score the NVFlare integration across heterogeneity and participation.\n\nMeasures detection delay and false-alarm rate. Runs examples/nvflare/job.py\nin the NVFlare simulator over a grid and scores the aggregator's recorded\nhistories with the stage-4 protocol from the README:\n\n    cells          alpha in {100, 0.5, 0.1} x participation in {1.0, 0.6}\n    per cell       healthy train seeds 0-5, and a blur fault (1.5 px,\n                   site-3, onset round 15, ten-round ramp) on seeds 0-5\n    threshold      CUSUM healthy maximum after the reference epoch, seed 0,\n                   per cell; it never sees a fault\n    false alarms   counted on held-out healthy seeds 1-5, per run (the\n                   independent unit: runs with any alarm) and per client\n                   contact (supplementary; contacts cluster within runs)\n    delay          rounds from onset to the first flag on the faulted client\n\nEvery run records CUSUM with no threshold set; the threshold is applied\nafterwards, so calibration and scoring use exactly the histories the\naggregator wrote.\n\n    python scripts/nvflare_eval.py run --jobs 3   # every missing cell (~2 h)\n    python scripts/nvflare_eval.py score          # tables + results json\n",
   "fault": {
     "site": 3,
     "kind": "blur",
@@ -12,6 +12,14 @@
       "alpha": 100.0,
       "participation": 1.0,
       "threshold": 8.75966739000311,
+      "false_alarm_runs": [
+        1,
+        5
+      ],
+      "false_alarm_runs_wilson95": [
+        0.03622316096978745,
+        0.6244717358814613
+      ],
       "false_alarm_contacts": [
         1,
         750
@@ -35,6 +43,10 @@
       "detected_wilson95": [
         0.6096569663469354,
         0.9999999999999999
+      ],
+      "detected_strict": [
+        5,
+        6
       ],
       "delay_rounds": [
         6,
@@ -65,6 +77,14 @@
       "alpha": 100.0,
       "participation": 0.6,
       "threshold": 7.631920848926354,
+      "false_alarm_runs": [
+        3,
+        5
+      ],
+      "false_alarm_runs_wilson95": [
+        0.23071993220883708,
+        0.8823817688407467
+      ],
       "false_alarm_contacts": [
         12,
         450
@@ -88,6 +108,10 @@
       "detected_wilson95": [
         0.6096569663469354,
         0.9999999999999999
+      ],
+      "detected_strict": [
+        4,
+        6
       ],
       "delay_rounds": [
         6,
@@ -118,6 +142,14 @@
       "alpha": 0.5,
       "participation": 1.0,
       "threshold": 3.7652903128942548,
+      "false_alarm_runs": [
+        0,
+        5
+      ],
+      "false_alarm_runs_wilson95": [
+        0.0,
+        0.43449149475208104
+      ],
       "false_alarm_contacts": [
         0,
         750
@@ -141,6 +173,10 @@
       "detected_wilson95": [
         0.6096569663469354,
         0.9999999999999999
+      ],
+      "detected_strict": [
+        3,
+        6
       ],
       "delay_rounds": [
         5,
@@ -171,6 +207,14 @@
       "alpha": 0.5,
       "participation": 0.6,
       "threshold": 6.623401952766226,
+      "false_alarm_runs": [
+        0,
+        5
+      ],
+      "false_alarm_runs_wilson95": [
+        0.0,
+        0.43449149475208104
+      ],
       "false_alarm_contacts": [
         0,
         450
@@ -194,6 +238,10 @@
       "detected_wilson95": [
         0.29998832134152864,
         0.9032306674407831
+      ],
+      "detected_strict": [
+        4,
+        6
       ],
       "delay_rounds": [
         8,
@@ -220,6 +268,14 @@
       "alpha": 0.1,
       "participation": 1.0,
       "threshold": 0.7073947269285659,
+      "false_alarm_runs": [
+        3,
+        5
+      ],
+      "false_alarm_runs_wilson95": [
+        0.23071993220883708,
+        0.8823817688407467
+      ],
       "false_alarm_contacts": [
         5,
         750
@@ -243,6 +299,10 @@
       "detected_wilson95": [
         0.6096569663469354,
         0.9999999999999999
+      ],
+      "detected_strict": [
+        4,
+        6
       ],
       "delay_rounds": [
         6,
@@ -273,6 +333,14 @@
       "alpha": 0.1,
       "participation": 0.6,
       "threshold": 6.544562945524936,
+      "false_alarm_runs": [
+        0,
+        5
+      ],
+      "false_alarm_runs_wilson95": [
+        0.0,
+        0.43449149475208104
+      ],
       "false_alarm_contacts": [
         0,
         450
@@ -296,6 +364,10 @@
       "detected_wilson95": [
         0.03005258587173032,
         0.563509436563646
+      ],
+      "detected_strict": [
+        1,
+        6
       ],
       "delay_rounds": [
         5

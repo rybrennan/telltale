@@ -10,8 +10,9 @@ histories with the stage-4 protocol from the README:
                    site-3, onset round 15, ten-round ramp) on seeds 0-5
     threshold      CUSUM healthy maximum after the reference epoch, seed 0,
                    per cell; it never sees a fault
-    false alarms   counted on held-out healthy seeds 1-5, per client
-                   contact
+    false alarms   counted on held-out healthy seeds 1-5, per run (the
+                   independent unit: runs with any alarm) and per client
+                   contact (supplementary; contacts cluster within runs)
     delay          rounds from onset to the first flag on the faulted client
 
 Every run records CUSUM with no threshold set; the threshold is applied
@@ -129,8 +130,10 @@ def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
 def score_cell(alpha: float, part: float) -> dict:
     """Score one cell of the grid.
 
-    The threshold comes from healthy seed 0, false alarms from healthy seeds
-    1 and 2, and detection delay from the three fault runs.
+    The threshold comes from healthy seed 0, false alarms from held-out
+    healthy seeds 1-5, and detections and delays from the six fault seeds.
+    A detection is strict when no other site crossed the threshold at or
+    before the round the faulted site was first flagged.
 
     Args:
         alpha: Dirichlet label-skew concentration.
@@ -143,24 +146,35 @@ def score_cell(alpha: float, part: float) -> dict:
     cal = load(run_name(alpha, part, False, 0))["cusum"][stop:]
     thr = float(np.nanmax(cal))
 
-    contacts = alarms = rounds_with_alarm = n_rounds = 0
+    contacts = alarms = rounds_with_alarm = n_rounds = runs_alarmed = 0
     starved = []
     for s in SEEDS[1:]:
         c = load(run_name(alpha, part, False, s))["cusum"][stop:]
         contacts += int(np.isfinite(c).sum())
         alarms += int((c > thr).sum())
         rounds_with_alarm += int((c > thr).any(axis=1).sum())
+        runs_alarmed += int((c > thr).any())
         n_rounds += c.shape[0]
         starved.append(int(np.isnan(c).all(axis=0).sum()))
 
     row = FAULT["site"] - 1
     onset = FAULT["onset"]
     detections, delays, false_loc, contacts_to_flag = [], [], [], []
+    strict = []
     for s in SEEDS:
         c = load(run_name(alpha, part, True, s))["cusum"]
         above = np.isfinite(c) & (c > np.nan_to_num(thr, nan=np.inf))
         hit = [r for r in range(onset, ROUNDS) if above[r, row]]
         detections.append(bool(hit))
+        strict.append(
+            bool(hit)
+            and not any(
+                above[r, k]
+                for r in range(stop, hit[0] + 1)
+                for k in range(c.shape[1])
+                if k != row
+            )
+        )
         if hit:
             delays.append(hit[0] - onset)
             reported = np.isfinite(c[onset : hit[0] + 1, row])
@@ -178,12 +192,15 @@ def score_cell(alpha: float, part: float) -> dict:
         "alpha": alpha,
         "participation": part,
         "threshold": thr,
+        "false_alarm_runs": [runs_alarmed, len(SEEDS) - 1],
+        "false_alarm_runs_wilson95": wilson(runs_alarmed, len(SEEDS) - 1),
         "false_alarm_contacts": [alarms, contacts],
         "false_alarm_rate": alarms / contacts if contacts else None,
         "any_client_alarm_rounds": [rounds_with_alarm, n_rounds],
         "clients_without_reference_by_seed": starved,
         "detected": [k, len(SEEDS)],
         "detected_wilson95": wilson(k, len(SEEDS)),
+        "detected_strict": [sum(strict), len(SEEDS)],
         "delay_rounds": delays,
         "delay_contacts": contacts_to_flag,
         "false_localisations_by_seed": false_loc,
@@ -196,20 +213,25 @@ def score() -> list[dict]:
     summary = {"protocol": __doc__, "fault": FAULT, "cells": rows}
     SUMMARY.write_text(json.dumps(summary, indent=2, default=float))
     print(
-        "| alpha | participation | threshold | false alarms | blur detected"
+        "| alpha | participation | threshold | held-out runs alarmed"
+        " | false alarms, contacts | blur detected | strict"
         " | delay, rounds (contacts) | false localisations |"
     )
-    print("|---|---|---|---|---|---|---|")
+    print("|---|---|---|---|---|---|---|---|---|")
     for r in rows:
+        fr, nr = r["false_alarm_runs"]
         fa, n = r["false_alarm_contacts"]
         lo, hi = r["detected_wilson95"]
         pairs = zip(r["delay_rounds"], r["delay_contacts"], strict=True)
         delays = ", ".join(f"{d} ({c})" for d, c in pairs) or "none"
         print(
             f"| {r['alpha']:g} | {r['participation']:g}"
-            f" | {r['threshold']:.2f} | {fa}/{n} ({100 * fa / n:.1f}%)"
+            f" | {r['threshold']:.2f} | {fr}/{nr}"
+            f" | {fa}/{n} ({100 * fa / n:.1f}%)"
             f" | {r['detected'][0]}/{r['detected'][1]}"
-            f" [{lo:.2f}, {hi:.2f}] | {delays}"
+            f" [{lo:.2f}, {hi:.2f}]"
+            f" | {r['detected_strict'][0]}/{r['detected_strict'][1]}"
+            f" | {delays}"
             f" | {r['false_localisations_by_seed']} |"
         )
     return rows

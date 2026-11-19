@@ -70,28 +70,39 @@ kept in `results/nvflare_schedules.json` (the full histories, 173 MB, are not tr
 Fashion-MNIST, a 50-probe battery. Fault: site-3's images blur, ramping to 1.5 px over ten
 rounds from round 15. Per cell, the threshold is the CUSUM healthy maximum after the
 reference epoch (rounds 5-14) on healthy seed 0, and never sees a fault. False alarms are
-counted on held-out healthy seeds 1-5, per client contact. Detection is over six separate
-fault seeds, reported as "caught in k of 6 seeds" with a Wilson 95% interval, not as a
-probability. Summary: `results/nvflare_eval.json`.
+counted on held-out healthy seeds 1-5. The run is the independent unit, so the table leads
+with held-out runs that raised any alarm; alarms per client contact are supplementary, since
+contacts cluster within runs. Detection is over six separate fault seeds, reported as "caught
+in k of 6 seeds" with a Wilson 95% interval, not as a probability. "Strict" counts only seeds
+where no healthy site crossed the threshold at or before the round the faulted site was first
+flagged. Summary: `results/nvflare_eval.json`.
 
-| Label skew (alpha) | Sites sampled per round | Threshold | False alarms, held-out contacts | Blur caught | Rounds from onset to flag |
-| --- | --- | --- | --- | --- | --- |
-| 100 (near-IID) | 10 of 10 | 8.76 | 1 / 750 (0.1%) | 6 / 6 [0.61, 1.00] | 6, 6, 7, 9, 6, 7 |
-| 100 (near-IID) | 6 of 10 | 7.63 | 12 / 450 (2.7%) | 6 / 6 [0.61, 1.00] | 6, 10, 10, 10, 5, 10 |
-| 0.5 (moderate) | 10 of 10 | 3.77 | 0 / 750 (0.0%) | 6 / 6 [0.61, 1.00] | 5, 9, 4, 5, 6, 7 |
-| 0.5 (moderate) | 6 of 10 | 6.62 | 0 / 450 (0.0%) | 4 / 6 [0.30, 0.90] | 8, 6, 8, 9 |
-| 0.1 (severe) | 10 of 10 | 0.71 | 5 / 750 (0.7%) | 6 / 6 [0.61, 1.00] | 6, 1, 4, 0, 5, 3 |
-| 0.1 (severe) | 6 of 10 | 6.54 | 0 / 450 (0.0%) | 1 / 6 [0.03, 0.56] | 5 |
+| Label skew (alpha) | Sites sampled per round | Threshold | Held-out healthy runs with any alarm | False alarms, held-out contacts | Blur caught | Strict | Rounds from onset to flag |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 100 (near-IID) | 10 of 10 | 8.76 | 1 of 5 | 1 / 750 (0.1%) | 6 / 6 [0.61, 1.00] | 5 / 6 | 6, 6, 7, 9, 6, 7 |
+| 100 (near-IID) | 6 of 10 | 7.63 | 3 of 5 | 12 / 450 (2.7%) | 6 / 6 [0.61, 1.00] | 4 / 6 | 6, 10, 10, 10, 5, 10 |
+| 0.5 (moderate) | 10 of 10 | 3.77 | 0 of 5 | 0 / 750 (0.0%) | 6 / 6 [0.61, 1.00] | 3 / 6 | 5, 9, 4, 5, 6, 7 |
+| 0.5 (moderate) | 6 of 10 | 6.62 | 0 of 5 | 0 / 450 (0.0%) | 4 / 6 [0.30, 0.90] | 4 / 6 | 8, 6, 8, 9 |
+| 0.1 (severe) | 10 of 10 | 0.71 | 3 of 5 | 5 / 750 (0.7%) | 6 / 6 [0.61, 1.00] | 4 / 6 | 6, 1, 4, 0, 5, 3 |
+| 0.1 (severe) | 6 of 10 | 6.54 | 0 of 5 | 0 / 450 (0.0%) | 1 / 6 [0.03, 0.56] | 1 / 6 | 5 |
+
+**False alarms, per run.** 7 of the 30 held-out healthy runs raised at least one alarm,
+including 3 of 5 in two cells. That is the expected order of magnitude, not a defect: each
+cell's threshold is the maximum of one healthy run, and if runs are exchangeable a new healthy
+run exceeds the maximum of n calibration runs with probability about 1/(n + 1), here about
+one half. A deployment that needs fewer alarmed runs needs more healthy runs to calibrate on.
+Per contact the same alarms are rare (at most 2.7%), which is why both are shown.
 
 **Every site reporting.** The slow blur is caught in all six seeds at every heterogeneity
-level, with at most 0.7% false alarms per held-out contact. This matches the in-process
+level, 12 of 18 strictly, with at most 0.7% false alarms per held-out contact and 1 or 3 of
+5 held-out runs alarmed where any did. This matches the in-process
 harness (CUSUM, blur 1.5 px: caught in every seed at every alpha). Delays run zero to nine
 rounds; the zero- and one-round flags are both in the severe-skew cell, whose threshold is the
 lowest. At its 0.7% false-alarm rate, the chance of a false flag on that one site somewhere in
 the fifteen post-onset rounds is about 10%, so those two are reported, not leaned on.
 
 **Six of ten sites sampled per round.** Near-IID, detection holds but false alarms rise to
-2.7%. Under label skew the same fault is caught in 4 of 6 seeds at alpha 0.5 and 1 of 6 at
+2.7% of contacts, and 3 of 5 held-out runs. Under label skew the same fault is caught in 4 of 6 seeds at alpha 0.5 and 1 of 6 at
 alpha 0.1. Two things change when FedAvg samples six sites a round: each site has as few as 3
 contacts in the reference epoch instead of 10, and its leave-one-out consensus is built from
 a different set of peers every round. The evidence points at the second. The median
@@ -100,7 +111,9 @@ to 0.207 at alpha 0.5 and from 0.076 to 0.151 at alpha 0.1 (six healthy seeds); 
 thresholds rise with it (3.77 to 6.62, 0.71 to 6.54), and a 1.5 px blur no longer clears them
 reliably. Near-IID the variation does not rise (0.428 to 0.367).
 
-**Two alternatives were scored on the recorded histories, under the same protocol.**
+**Two alternatives were scored on the recorded histories, under the same protocol.** Their
+false alarms are per held-out contact; per-run counts were not computed for them, and the
+script that scored them is not in the repository.
 
 | Statistic | alpha 100, 6 of 10 | alpha 0.5, 6 of 10 | alpha 0.1, 6 of 10 | Cost elsewhere |
 | --- | --- | --- | --- | --- |
@@ -122,7 +135,7 @@ connection to the simulator's server at round 3) and was rerun.
 
 ## Validation performed
 
-- **Code tested:** telltale `6b9e23f` (the commit the results above were scored at; later commits touch only CI and documentation).
+- **Code tested:** telltale `6b9e23f` (the commit the 72 runs were made and first scored at). The per-run false-alarm and strict-detection columns were added on 2026-11-18 by rescoring the same recorded histories; every earlier number is unchanged.
 - **NVFlare:** 2.7.3 for the 72-run evaluation; the example re-run from a fresh clone on 2.9.0 (4 sites, 4 rounds, 3 of 4 sampled per round).
 - **Environment:** macOS 15.6 (Apple M4 Pro), Python 3.12, CPU only, one machine. The same 4-site run also executes in the simulator on Ubuntu in this repository's CI on every push.
 - **Commands:** `python job.py` with the defaults for one healthy run (input: Fashion-MNIST, downloaded to `data/` on first run); `python scripts/nvflare_eval.py run --jobs 3` then `score` for the table above.
