@@ -265,14 +265,24 @@ def score() -> dict:
             m: max(np.nanmax(S[c][m][stop:]) for c in cal_ids)
             for m in ("cusum", "dis")
         }
-        # Dashboard noise band: healthy round-to-round range of each fleet rate.
-        band = {
-            m: [
-                float(min(np.min(S[c][m][stop:]) for c in cal_ids + hold_ids)),
-                float(max(np.max(S[c][m][stop:]) for c in cal_ids + hold_ids)),
-            ]
-            for m in ("rate", "agree")
-        }
+
+        # Dashboard healthy range: the min-max of each fleet rate over the
+        # SAME calibration runs that set the per-agent thresholds, so every
+        # method is calibrated alike and held-out runs measure its false
+        # alarms. Superseded 2026-11-18: the range was first set on all 12
+        # healthy runs, held-out ones included, which widened the triage
+        # range and hid 10 changes (kept below as band_all_healthy).
+        def _band(ids, S=S):
+            return {
+                m: [
+                    float(min(np.min(S[c][m][stop:]) for c in ids)),
+                    float(max(np.max(S[c][m][stop:]) for c in ids)),
+                ]
+                for m in ("rate", "agree")
+            }
+
+        band = _band(cal_ids)
+        band_all = _band(cal_ids + hold_ids)
         far = {}
         for m in ("cusum", "dis"):
             flagged = sum(
@@ -290,6 +300,27 @@ def score() -> dict:
                 "runs_alarmed": alarmed,
                 "runs": len(hold_ids),
             }
+        for m in ("rate", "agree"):
+            far[f"dashboard_{m}"] = {
+                "runs_alarmed": sum(
+                    any(
+                        S[h][m][r] < band[m][0] or S[h][m][r] > band[m][1]
+                        for r in range(ONSET, ROUNDS)
+                    )
+                    for h in hold_ids
+                ),
+                "runs": len(hold_ids),
+            }
+        far["any_of_three_runs_alarmed"] = sum(
+            bool((S[h]["cusum"][stop:] > thr["cusum"]).any())
+            or bool((S[h]["dis"][stop:] > thr["dis"]).any())
+            or any(
+                S[h]["rate"][r] < band["rate"][0]
+                or S[h]["rate"][r] > band["rate"][1]
+                for r in range(ONSET, ROUNDS)
+            )
+            for h in hold_ids
+        )
         det = {}
         for f in FAULTS:
             rows = []
@@ -323,6 +354,16 @@ def score() -> dict:
                     )
                     for m in ("rate", "agree")
                 }
+                row["superseded_all_healthy_band"] = {
+                    m: bool(
+                        any(
+                            st[m][r] < band_all[m][0]
+                            or st[m][r] > band_all[m][1]
+                            for r in range(ONSET, ROUNDS)
+                        )
+                    )
+                    for m in ("rate", "agree")
+                }
                 rows.append(row)
             summ = {}
             for m in ("cusum", "dis"):
@@ -346,6 +387,10 @@ def score() -> dict:
                 m: sum(r["dashboard_outside_healthy_band"][m] for r in rows)
                 for m in ("rate", "agree")
             }
+            summ["superseded_dashboard_moved"] = {
+                m: sum(r["superseded_all_healthy_band"][m] for r in rows)
+                for m in ("rate", "agree")
+            }
             det[f] = {"summary": summ, "runs": rows}
         unparsed = sum(
             a is None
@@ -358,10 +403,12 @@ def score() -> dict:
         out["tasks"][task] = {
             "thresholds": {k: float(v) for k, v in thr.items()},
             "dashboard_healthy_band": band,
+            "superseded_dashboard_band_all_healthy": band_all,
             "false_alarms": far,
             "detection": det,
             "unparsed_answers": unparsed,
         }
+    out["summary"] = overall(out)
     (REPO / "results" / "agent_eval.json").write_text(json.dumps(out, indent=2))
     for task, d in out["tasks"].items():
         print(
@@ -378,7 +425,85 @@ def score() -> dict:
                 f" | dashboard moved: rate {s['dashboard_moved']['rate']}, "
                 f"agree {s['dashboard_moved']['agree']}"
             )
+    print("\n== overall\n" + json.dumps(out["summary"], indent=2))
     return out
+
+
+SUBTLE = ("cautious", "memory", "model")
+
+
+def overall(out: dict) -> dict:
+    """Totals across both jobs. The run is the unit; dashboard = fleet rate."""
+    rows = {
+        f: [r for t in out["tasks"].values() for r in t["detection"][f]["runs"]]
+        for f in FAULTS
+    }
+
+    def count(fs, pred):
+        return sum(pred(r) for f in fs for r in rows[f])
+
+    def dash(r):
+        return r["dashboard_outside_healthy_band"]["rate"]
+
+    def tt(r):
+        return r["cusum"]["caught"]
+
+    def dis(r):
+        return r["dis"]["caught"]
+
+    nonoff = ("policy", *SUBTLE)
+    n_sub = count(SUBTLE, lambda r: True)
+    quiet = [r for f in SUBTLE for r in rows[f] if not dash(r)]
+    fa = {
+        m: sum(
+            t["false_alarms"][k]["runs_alarmed"] for t in out["tasks"].values()
+        )
+        for m, k in (
+            ("dashboard", "dashboard_rate"),
+            ("telltale", "cusum"),
+            ("disagreement", "dis"),
+        )
+    }
+    n_hold = sum(
+        t["false_alarms"]["cusum"]["runs"] for t in out["tasks"].values()
+    )
+    return {
+        "subtle_runs": n_sub,
+        "subtle_caught": {
+            "dashboard": count(SUBTLE, dash),
+            "telltale": count(SUBTLE, tt),
+            "disagreement": count(SUBTLE, dis),
+            "any_of_three": count(SUBTLE, lambda r: dash(r) or tt(r) or dis(r)),
+            "superseded_dashboard_all_healthy_band": count(
+                SUBTLE, lambda r: r["superseded_all_healthy_band"]["rate"]
+            ),
+        },
+        "subtle_missed_by_all_three": count(
+            SUBTLE, lambda r: not (dash(r) or tt(r) or dis(r))
+        ),
+        "dashboard_quiet_subtle": len(quiet),
+        "dashboard_quiet_caught_per_agent": sum(tt(r) or dis(r) for r in quiet),
+        "dashboard_quiet_caught_per_agent_strict": sum(
+            r["cusum"]["strict"] or r["dis"]["strict"] for r in quiet
+        ),
+        "non_offquiz_runs": count(nonoff, lambda r: True),
+        "non_offquiz_caught": {
+            "dashboard": count(nonoff, dash),
+            "telltale": count(nonoff, tt),
+            "telltale_strict": count(nonoff, lambda r: r["cusum"]["strict"]),
+            "disagreement": count(nonoff, dis),
+            "disagreement_strict": count(nonoff, lambda r: r["dis"]["strict"]),
+        },
+        "offquiz_caught_per_agent": count(
+            ("offquiz",), lambda r: tt(r) or dis(r)
+        ),
+        "held_out_healthy_runs": n_hold,
+        "held_out_runs_alarmed": fa,
+        "held_out_runs_alarmed_any_of_three": sum(
+            t["false_alarms"]["any_of_three_runs_alarmed"]
+            for t in out["tasks"].values()
+        ),
+    }
 
 
 def main() -> int:

@@ -7,7 +7,7 @@ This is a first, small test, not an evaluation: 8 runs, one task type, one model
 ## Setup
 - **Agents:** 5 support-triage agents on Claude Haiku, each with slightly different instructions (overnight queue, business customers, careful, fast).
 - **Probe battery:** 20 fixed support tickets ([`telltale/agents/probes.py`](../../telltale/agents/probes.py)). Each agent labels every ticket with a category, a priority and whether to escalate.
-- **Rounds:** 10. Reference rounds 1 to 4. Changes start at round 5.
+- **Rounds:** 1 to 10. Rounds 2 to 5 are the reference; changes start at round 6. (The script indexes rounds from 0: `ONSET = 5`, `REFERENCE = slice(1, 5)`. "Rounds after the change" below counts from the change round, so 0 would mean round 6.)
 - **Runs:** 4 healthy (no change); 2 **policy change** (agent 2's instructions quietly edited to file refund and billing questions under account issues and escalate only legal threats); 2 **model update** (agent 2 switched from Haiku to Sonnet).
 - **Threshold:** the largest CUSUM any agent reached in the healthy runs after the reference rounds. False alarms are counted by holding each healthy run out in turn.
 - Agents run through the Claude Code CLI in headless mode (`claude -p`); every raw reply is cached under `results/agents/`, so scoring is reproducible without calling a model.
